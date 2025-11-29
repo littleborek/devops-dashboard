@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Sunucu Detayı - DevOps Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans">
+
+    <nav class="bg-gray-800 border-b border-gray-700 p-4">
+        <div class="container mx-auto flex items-center">
+            <a href="/" class="text-blue-400 hover:text-blue-300 transition mr-4">
+                <i class="fa-solid fa-arrow-left"></i> Geri
+            </a>
+            <h1 class="text-xl font-bold text-white">
+                <i class="fa-solid fa-server mr-2 text-gray-500"></i>
+                <span th:text="${server.name}">Server Name</span>
+            </h1>
+            <span class="ml-4 px-2 py-1 rounded text-xs bg-gray-700 text-gray-300" th:text="${server.ipAddress}">IP</span>
+        </div>
+    </nav>
+
+    <div class="container mx-auto mt-8 p-4 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <div class="space-y-6">
+            <div class="bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700">
+                <h2 class="text-lg font-semibold mb-4 text-blue-400">Sunucu Bilgileri</h2>
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Durum:</span>
+                        <span th:text="${server.status}" class="font-bold text-white">UNKNOWN</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Lokasyon:</span>
+                        <span th:text="${server.location}">Loc</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">OS:</span>
+                        <span th:text="${server.operatingSystem}">OS</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">ID:</span>
+                        <span th:text="${server.id}" id="serverIdDisplay">1</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700">
+                <h2 class="text-lg font-semibold mb-4 text-purple-400">Hızlı İşlemler</h2>
+                <button onclick="deployApp()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded mb-3 transition flex justify-center items-center">
+                    <i class="fa-solid fa-rocket mr-2"></i> Yeni Deploy Tetikle
+                </button>
+                <button class="w-full bg-gray-700 hover:bg-gray-600 text-gray-300 py-2 rounded transition text-sm">
+                    <i class="fa-solid fa-rotate mr-2"></i> Servisleri Yeniden Başlat
+                </button>
+            </div>
+        </div>
+
+        <div class="lg:col-span-2">
+            <div class="bg-gray-800 rounded-lg shadow-lg border border-gray-700 overflow-hidden">
+                <div class="p-4 border-b border-gray-700 flex justify-between items-center bg-gray-800">
+                    <h2 class="text-lg font-semibold text-white">Deploy Geçmişi</h2>
+                    <span class="text-xs text-gray-500">Son 50 işlem</span>
+                </div>
+                
+                <table class="w-full text-left">
+                    <thead class="bg-gray-900 text-gray-400 text-xs uppercase">
+                        <tr>
+                            <th class="p-4">Uygulama</th>
+                            <th class="p-4">Versiyon</th>
+                            <th class="p-4">Durum</th>
+                            <th class="p-4">Tarih</th>
+                            <th class="p-4 text-right">Log</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-700 text-sm">
+                        <tr th:each="deploy : ${deployments}" class="hover:bg-gray-750">
+                            <td class="p-4 font-medium text-white" th:text="${deploy.applicationName}">App</td>
+                            <td class="p-4 text-blue-300 font-mono" th:text="${deploy.version}">v1.0</td>
+                            <td class="p-4">
+                                <span th:if="${deploy.status.name() == 'SUCCESS'}" class="px-2 py-1 rounded text-xs bg-green-900 text-green-400 border border-green-800">SUCCESS</span>
+                                <span th:if="${deploy.status.name() == 'FAILED'}" class="px-2 py-1 rounded text-xs bg-red-900 text-red-400 border border-red-800">FAILED</span>
+                            </td>
+                            <td class="p-4 text-gray-400" th:text="${deploy.createdAt}">Date</td>
+							<td class="p-4 text-right">
+							    <button 
+							        onclick="showLogs(this.getAttribute('data-logs'))" 
+							        th:data-logs="${deploy.logs != null ? deploy.logs : 'Log kaydı bulunamadı.'}"
+							        class="text-gray-400 hover:text-blue-400 transition cursor-pointer" 
+							        title="Logları İncele">
+							        <i class="fa-solid fa-file-code text-lg"></i>
+							    </button>
+							</td>
+                        </tr>
+                        <tr th:if="${deployments.empty}">
+                            <td colspan="5" class="p-8 text-center text-gray-500">
+                                <i class="fa-solid fa-box-open mb-2 text-2xl"></i>
+                                <p>Henüz deploy kaydı yok.</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+	<script th:inline="javascript">
+	        var serverId = [[${server.id}]];
+
+	        function deployApp() {
+	            Swal.fire({
+	                title: 'Deploy Başlat',
+	                html:
+	                    '<input id="swal-app" class="swal2-input" placeholder="Uygulama Adı (örn: api-service)">' +
+	                    '<input id="swal-ver" class="swal2-input" placeholder="Versiyon (örn: v2.1.0)">',
+	                background: '#1f2937',
+	                color: '#fff',
+	                showCancelButton: true,
+	                confirmButtonText: 'Deploy Et',
+	                cancelButtonText: 'İptal',
+	                preConfirm: function() {
+	                    return [
+	                        document.getElementById('swal-app').value,
+	                        document.getElementById('swal-ver').value
+	                    ];
+	                }
+	            }).then(function(result) {
+	                if (result.isConfirmed) {
+	                    var values = result.value;
+	                    var appName = values[0];
+	                    var version = values[1];
+	                    
+	                    if(!appName || !version) return;
+
+	                    fetch('/api/v1/deployments', {
+	                        method: 'POST',
+	                        headers: { 'Content-Type': 'application/json' },
+	                        body: JSON.stringify({
+	                            applicationName: appName,
+	                            version: version,
+	                            serverId: serverId,
+	                            logs: "Deploy started by Admin via Dashboard..."
+	                        })
+	                    })
+	                    .then(function(response) {
+	                        if(response.ok) {
+	                            Swal.fire({
+	                                icon: 'success',
+	                                title: 'Deploy Başarılı!',
+	                                timer: 1500,
+	                                showConfirmButton: false,
+	                                background: '#1f2937', 
+	                                color: '#fff'
+	                            }).then(function() { 
+	                                location.reload(); 
+	                            });
+	                        } else {
+	                            Swal.fire({ 
+	                                icon: 'error', 
+	                                title: 'Hata', 
+	                                text: 'Deploy işlemi başarısız.',
+	                                background: '#1f2937', 
+	                                color: '#fff'
+	                            });
+	                        }
+	                    });
+	                }
+	            });
+				
+	        }
+			function showLogs(logContent) {
+			            Swal.fire({
+			                title: 'Deploy Logları',
+			                html: `
+			                    <div class="text-left bg-black p-4 rounded-lg border border-gray-700 shadow-inner">
+			                        <pre class="text-xs text-green-400 font-mono overflow-auto max-h-96 whitespace-pre-wrap">${logContent}</pre>
+			                    </div>
+			                `,
+			                width: '800px', 
+			                background: '#1f2937',
+			                color: '#fff',
+			                showConfirmButton: true,
+			                confirmButtonText: 'Kapat',
+			                confirmButtonColor: '#3085d6'
+			            });
+			        }
+			
+	    </script>
+
+</body>
+</html>

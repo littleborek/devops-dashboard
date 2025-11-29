@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevOps Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans relative">
+
+    <nav class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold text-blue-400 flex items-center">
+                <i class="fa-solid fa-server mr-2"></i>
+                DevOps<span class="text-white">Dashboard</span>
+            </h1>
+            <div class="space-x-4">
+                <span class="bg-gray-700 px-3 py-1 rounded text-sm text-gray-300">
+                    <i class="fa-solid fa-user-shield mr-1"></i> Admin
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto mt-8 p-4">
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg border-l-4 border-blue-500">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-gray-400 text-sm uppercase tracking-wider">Toplam Sunucu</h3>
+                        <p class="text-3xl font-bold mt-1" th:text="${servers.size()}">0</p>
+                    </div>
+                    <i class="fa-solid fa-network-wired text-blue-500 text-3xl opacity-50"></i>
+                </div>
+            </div>
+            
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg border-l-4 border-green-500">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-gray-400 text-sm uppercase tracking-wider">Online</h3>
+                        <p class="text-3xl font-bold mt-1 text-green-400">Live</p>
+                    </div>
+                    <i class="fa-solid fa-heart-pulse text-green-500 text-3xl opacity-50"></i>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg border-l-4 border-purple-500">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-gray-400 text-sm uppercase tracking-wider">Son Tarama</h3>
+                        <p class="text-lg font-bold mt-2 text-gray-300">Otomatik</p>
+                    </div>
+                    <i class="fa-solid fa-clock text-purple-500 text-3xl opacity-50"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-lg shadow-xl overflow-hidden">
+            <div class="p-5 border-b border-gray-700 flex justify-between items-center bg-gray-800">
+                <h2 class="text-xl font-semibold text-white">Sunucu Listesi</h2>
+                <button onclick="openNewModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition flex items-center">
+                    <i class="fa-solid fa-plus mr-2"></i> Yeni Sunucu
+                </button>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-750 text-gray-400 text-xs uppercase tracking-wider border-b border-gray-700">
+                            <th class="p-4">Durum</th>
+                            <th class="p-4">Sunucu Adı</th>
+                            <th class="p-4">IP / Adres</th>
+                            <th class="p-4">Lokasyon</th>
+                            <th class="p-4">OS</th>
+                            <th class="p-4 text-right">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-700 text-sm">
+                        <tr th:each="server : ${servers}" class="hover:bg-gray-700 transition duration-150">
+                            <td class="p-4 whitespace-nowrap" th:id="'status-cell-' + ${server.id}">
+                                <span th:if="${server.status == 'ONLINE'}" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-900/50 text-green-400 border border-green-800">
+                                    <span class="w-2 h-2 mr-2 bg-green-400 rounded-full animate-pulse shadow-[0_0_10px_#4ade80]"></span> ONLINE
+                                </span>
+                                <span th:if="${server.status == 'OFFLINE'}" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-900/50 text-red-400 border border-red-800">
+                                    <span class="w-2 h-2 mr-2 bg-red-400 rounded-full"></span> OFFLINE
+                                </span>
+                                <span th:if="${server.status == 'UNKNOWN'}" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-700 text-gray-300 border border-gray-600">
+                                    <span class="w-2 h-2 mr-2 bg-gray-400 rounded-full"></span> UNKNOWN
+                                </span>
+                            </td>
+                            <td class="p-4 font-semibold text-white" th:text="${server.name}">Server</td>
+                            <td class="p-4 text-blue-300 font-mono" th:text="${server.ipAddress}">127.0.0.1</td>
+                            <td class="p-4 text-gray-300" th:text="${server.location}">Loc</td>
+                            <td class="p-4 text-gray-400">
+                                <i class="fa-brands fa-linux mr-2"></i> <span th:text="${server.operatingSystem}">OS</span>
+                            </td>
+                            <td class="p-4 text-right space-x-2">
+                                <a th:href="@{/server/{id}(id=${server.id})}" class="text-gray-400 hover:text-green-400 transition" title="Deploy Geçmişi">
+                                    <i class="fa-solid fa-rocket"></i>
+                                </a>
+                                
+                                <button th:onclick="'openEditModal(' + ${server.id} + ')'" class="text-gray-400 hover:text-yellow-400 transition" title="Düzenle">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+
+                                <button th:onclick="'deleteServer(' + ${server.id} + ')'" class="text-gray-400 hover:text-red-400 transition" title="Sil">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div th:if="${servers.empty}" class="p-10 text-center text-gray-500">
+                    <i class="fa-solid fa-server text-6xl mb-4 opacity-20"></i>
+                    <p class="text-lg">Henüz izlenen bir sunucu yok.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="addServerModal" class="fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-50 backdrop-blur-sm transition-opacity">
+        <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg border border-gray-700 transform transition-all scale-100 max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-700 flex justify-between items-center bg-gray-800 sticky top-0 z-10">
+                <h3 id="modalTitle" class="text-xl font-bold text-white">Yeni Sunucu Ekle</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-4">
+                <input type="hidden" id="serverId">
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Sunucu Adı</label>
+                    <input type="text" id="serverName" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Örn: Prod-DB-01">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">IP Adresi / URL</label>
+                    <input type="text" id="serverIp" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Örn: 192.168.1.50 veya https://site.com">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">İşletim Sistemi</label>
+                        <input type="text" id="serverOs" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Örn: Ubuntu">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Lokasyon</label>
+                        <input type="text" id="serverLocation" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Örn: Frankfurt">
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-700 pt-4 mt-2">
+                    <label class="block text-sm font-medium text-yellow-500 mb-1">
+                        <i class="fa-solid fa-lock mr-1"></i> Özel SSL Sertifikası (PEM Formatında)
+                    </label>
+                    <p class="text-xs text-gray-500 mb-2">Self-signed sertifikalı sunucular (OpenVPN vb.) için sertifika içeriğini buraya yapıştırın.</p>
+                    <textarea id="serverCert" rows="4" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-xs font-mono focus:ring-2 focus:ring-yellow-500 focus:outline-none placeholder-gray-600" placeholder="-----BEGIN CERTIFICATE-----..."></textarea>
+                </div>
+            </div>
+
+            <div class="p-6 border-t border-gray-700 flex justify-end space-x-3 bg-gray-800 rounded-b-xl sticky bottom-0">
+                <button onclick="closeModal()" class="px-4 py-2 text-gray-300 hover:text-white transition">İptal</button>
+                <button onclick="saveServer()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition flex items-center">
+                    <i class="fa-solid fa-save mr-2"></i> Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isEditMode = false;
+
+        // Modal Kapatma
+        function closeModal() {
+            document.getElementById('addServerModal').classList.add('hidden');
+        }
+
+        // 1. Yeni Kayıt Modu
+        function openNewModal() {
+            isEditMode = false;
+            document.getElementById('modalTitle').innerText = "Yeni Sunucu Ekle";
+            document.getElementById('serverId').value = '';
+            
+            // Formu Temizle
+            document.getElementById('serverName').value = '';
+            document.getElementById('serverIp').value = '';
+            document.getElementById('serverOs').value = '';
+            document.getElementById('serverLocation').value = '';
+            document.getElementById('serverCert').value = '';
+            
+            document.getElementById('addServerModal').classList.remove('hidden');
+        }
+
+        // 2. Düzenleme Modu
+        function openEditModal(id) {
+            isEditMode = true;
+            document.getElementById('modalTitle').innerText = "Sunucuyu Düzenle";
+            document.getElementById('serverId').value = id;
+
+            // Güncel verileri çek
+            fetch('/api/v1/servers')
+            .then(res => res.json())
+            .then(servers => {
+                const server = servers.find(s => s.id === id);
+                if(server) {
+                    document.getElementById('serverName').value = server.name;
+                    document.getElementById('serverIp').value = server.ipAddress;
+                    document.getElementById('serverOs').value = server.operatingSystem;
+                    document.getElementById('serverLocation').value = server.location;
+                    // Eğer backend'den customCertificate dönüyorsa buraya doldur
+                    // Not: Güvenlik gereği bazen backend sertifikayı dönmeyebilir, kontrol etmek lazım
+                    document.getElementById('serverCert').value = server.customCertificate || ''; 
+                    
+                    document.getElementById('addServerModal').classList.remove('hidden');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                Swal.fire({icon: 'error', title: 'Hata', text: 'Sunucu bilgileri alınamadı.'});
+            });
+        }
+
+        // 3. Kaydetme (Create veya Update)
+        function saveServer() {
+            const id = document.getElementById('serverId').value;
+            const serverData = {
+                name: document.getElementById('serverName').value,
+                ipAddress: document.getElementById('serverIp').value,
+                operatingSystem: document.getElementById('serverOs').value,
+                location: document.getElementById('serverLocation').value,
+                customCertificate: document.getElementById('serverCert').value
+            };
+
+            // Validasyon
+            if(!serverData.name || !serverData.ipAddress) {
+                Swal.fire({ icon: 'warning', title: 'Eksik Bilgi', text: 'Sunucu Adı ve Adres alanları zorunludur.', background: '#1f2937', color: '#fff' });
+                return;
+            }
+
+            let url = '/api/v1/servers';
+            let method = 'POST';
+
+            if (isEditMode && id) {
+                url = '/api/v1/servers/' + id;
+                method = 'PUT';
+            }
+
+            fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(serverData)
+            })
+            .then(response => {
+                if (response.ok) {
+                    closeModal();
+                    Swal.fire({ 
+                        icon: 'success', 
+                        title: isEditMode ? 'Güncellendi!' : 'Eklendi!', 
+                        timer: 1500, showConfirmButton: false, background: '#1f2937', color: '#fff' 
+                    }).then(() => window.location.reload());
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Hata', text: 'İşlem başarısız.', background: '#1f2937', color: '#fff' });
+                }
+            });
+        }
+
+        // Silme Fonksiyonu
+        function deleteServer(id) {
+            Swal.fire({
+                title: 'Emin misiniz?',
+                text: "Bu sunucu takipten çıkarılacak!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Evet, Sil!',
+                cancelButtonText: 'İptal',
+                background: '#1f2937',
+                color: '#fff'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('/api/v1/servers/' + id, { method: 'DELETE' })
+                    .then(response => {
+                        if (response.ok || response.status === 204) {
+                            Swal.fire({
+                                title: 'Silindi!',
+                                icon: 'success',
+                                background: '#1f2937', color: '#fff',
+                                timer: 1500, showConfirmButton: false
+                            }).then(() => window.location.reload());
+                        } else {
+                            Swal.fire({ icon: 'error', title: 'Hata', background: '#1f2937', color: '#fff' });
+                        }
+                    });
+                }
+            });
+        }
+
+        // CANLI TAKİP SİSTEMİ (Polling)
+        setInterval(function() {
+            fetch('/api/v1/servers')
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(server => {
+                    const cellId = 'status-cell-' + server.id;
+                    const cellElement = document.getElementById(cellId);
+                    
+                    if (cellElement) {
+                        let newHtml = '';
+                        if (server.status === 'ONLINE') {
+                            newHtml = `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-900/50 text-green-400 border border-green-800">
+                                        <span class="w-2 h-2 mr-2 bg-green-400 rounded-full animate-pulse shadow-[0_0_10px_#4ade80]"></span> ONLINE
+                                       </span>`;
+                        } else if (server.status === 'OFFLINE') {
+                            newHtml = `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-900/50 text-red-400 border border-red-800">
+                                        <span class="w-2 h-2 mr-2 bg-red-400 rounded-full"></span> OFFLINE
+                                       </span>`;
+                        } else {
+                            newHtml = `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-700 text-gray-300 border border-gray-600">
+                                        <span class="w-2 h-2 mr-2 bg-gray-400 rounded-full"></span> UNKNOWN
+                                       </span>`;
+                        }
+                        cellElement.innerHTML = newHtml;
+                    }
+                });
+            })
+            .catch(err => console.error('Veri yenilenemedi:', err));
+        }, 5000);
+
+        // Modal dışına tıklayınca kapat
+        window.onclick = function(event) {
+            const modal = document.getElementById('addServerModal');
+            if (event.target == modal) closeModal();
+        }
+    </script>
+</body>
+</html>
