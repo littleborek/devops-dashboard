@@ -18,4 +18,8 @@ public class ServerRequest {
     private String location;
     
     private String customCertificate;
+    
+    private String category;
+    
+    private boolean maintenanceMode;
 }

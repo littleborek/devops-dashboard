@@ -34,7 +34,9 @@ public class ServerServiceImpl implements ServerService {
                 .ipAddress(request.getIpAddress())
                 .operatingSystem(request.getOperatingSystem())
                 .location(request.getLocation())
-                .customCertificate(request.getCustomCertificate()) 
+   
+                .category(request.getCategory() == null || request.getCategory().isEmpty() ? "Genel" : request.getCategory())
+                .customCertificate(request.getCustomCertificate())
                 .status(ServerStatus.UNKNOWN)
                 .build();
 
@@ -51,7 +53,9 @@ public class ServerServiceImpl implements ServerService {
         server.setIpAddress(request.getIpAddress());
         server.setOperatingSystem(request.getOperatingSystem());
         server.setLocation(request.getLocation());
-        server.setCustomCertificate(request.getCustomCertificate()); 
+        server.setCategory(request.getCategory() == null || request.getCategory().isEmpty() ? "Genel" : request.getCategory());
+        server.setCustomCertificate(request.getCustomCertificate());
+        server.setMaintenanceMode(request.isMaintenanceMode());
 
         return mapToResponse(serverRepository.save(server));
     }
@@ -80,21 +84,31 @@ public class ServerServiceImpl implements ServerService {
                 .ipAddress(server.getIpAddress())
                 .operatingSystem(server.getOperatingSystem())
                 .location(server.getLocation())
+                .category(server.getCategory()) 
                 .status(server.getStatus().name())
-
+                .customCertificate(server.getCustomCertificate()) 
+                .lastResponseTime(server.getLastResponseTime())
+                .maintenanceMode(server.isMaintenanceMode())
                 .build();
     }
     
 
+    @Override
     public ServerStatus checkServerStatus(Server server) {
+
+        long startTime = System.currentTimeMillis();
+
         String rawAddress = server.getIpAddress();
         if (rawAddress == null) return ServerStatus.OFFLINE;
         String address = rawAddress.trim().replace("\n", "").replace("\r", "");
         
+
         if (address.toLowerCase().startsWith("udp://")) {
-            return checkUdpStatus(address);
+        	ServerStatus status = checkUdpStatus(address);
+        	server.setLastResponseTime(-1);
+        	return status;
         }
-        
+
         String customCert = server.getCustomCertificate();
         String urlString;
 
@@ -111,58 +125,72 @@ public class ServerServiceImpl implements ServerService {
             URL url = new URL(urlString);
             java.net.HttpURLConnection connection = (java.net.HttpURLConnection) url.openConnection();
 
-            
+
             if (connection instanceof HttpsURLConnection) {
                 HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
                 
-          
+
                 if (customCert != null && !customCert.isBlank()) {
                     try {
                         SSLContext sslContext = createSSLContextFromPEM(customCert);
                         httpsConnection.setSSLSocketFactory(sslContext.getSocketFactory());
+ 
                         httpsConnection.setHostnameVerifier((hostname, session) -> true);
                         
                     } catch (Exception e) {
                         System.out.println("Custom Sertifika Hatası: " + e.getMessage());
-             
                         return ServerStatus.OFFLINE;
                     }
                 } 
-           
+  
                 else {
                     if (isLocalNetwork(url.getHost())) {
-  
+   
                         trustAllCertificates(httpsConnection);
-                        System.out.println("Lokal Ağ Tespit Edildi (Güvenlik Gevşetildi): " + url.getHost());
+
                     } else {
 
-                        System.out.println("Dış Ağ Tespit Edildi (Standart Güvenlik Aktif): " + url.getHost());
                     }
                 }
             }
 
-
             connection.setRequestProperty("User-Agent", "Mozilla/5.0 (compatible; DevOpsDashboard/1.0)");
-            connection.setInstanceFollowRedirects(false);
+            connection.setInstanceFollowRedirects(false); // Redirect Loop için kapalı
             connection.setRequestMethod("GET");
             connection.setConnectTimeout(5000);
             connection.setReadTimeout(5000);
 
             int code = connection.getResponseCode();
-            System.out.println("Kontrol: " + urlString + " | Kod: " + code);
+            
+            long endTime = System.currentTimeMillis();
+            int duration = (int) (endTime - startTime);
+           
+            server.setLastResponseTime(duration);
+
+            System.out.println("Kontrol: " + urlString + " | Kod: " + code + " | Süre: " + duration + "ms");
             
             if (code >= 200 && code < 500) {
                 return ServerStatus.ONLINE;
             }
 
         } catch (IOException e) {
-            System.out.println("Bağlantı Hatası (" + urlString + "): " + e.getMessage());
+            System.out.println("HTTP Hatası (" + urlString + "): " + e.getMessage());
 
             try {
-                if (InetAddress.getByName(address).isReachable(3000)) return ServerStatus.ONLINE;
-            } catch (Exception ex) { /* yut */ }
+                long pingStart = System.currentTimeMillis();
+
+                if (InetAddress.getByName(address).isReachable(3000)) {
+                    
+                    long pingEnd = System.currentTimeMillis();
+                    server.setLastResponseTime((int) (pingEnd - pingStart));
+                    
+                    System.out.println("Ping Başarılı: " + address);
+                    return ServerStatus.ONLINE;
+                }
+            } catch (Exception ex) { }
         }
 
+        server.setLastResponseTime(0);
         return ServerStatus.OFFLINE;
     }
 

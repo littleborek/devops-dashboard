@@ -12,12 +12,17 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+import com.berk.devopsdashboard.entity.ServerHistory;
+import com.berk.devopsdashboard.repository.ServerHistoryRepository; 
+import java.time.LocalDateTime;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class ServerStatusMonitor {
 
     private final ServerRepository serverRepository;
+    private final ServerHistoryRepository historyRepository;
     private final ServerService serverService;
     private final NotificationService notificationService;
 
@@ -29,18 +34,35 @@ public class ServerStatusMonitor {
             try {
                 ServerStatus oldStatus = server.getStatus();
                 ServerStatus newStatus = serverService.checkServerStatus(server);
+                server.setStatus(newStatus);
+                serverRepository.save(server);
+
+                ServerHistory history = ServerHistory.builder()
+                        .server(server)
+                        .status(newStatus)
+                        .responseTime(server.getLastResponseTime())
+                        .checkTime(LocalDateTime.now())
+                        .build();
+                historyRepository.save(history);
+
                 if (oldStatus != newStatus) {
                     server.setStatus(newStatus);
                     serverRepository.save(server);
                     log.info("DURUM DEĞİŞTİ: {} -> {} (Eski: {})", server.getName(), newStatus, oldStatus);
-                    if (newStatus == ServerStatus.OFFLINE) {
-                        log.warn("🚨 ALARM: {} çöktü! Discord'a bildiriliyor...", server.getName());
-                        notificationService.sendOfflineAlert(server);
+
+                    if (newStatus == ServerStatus.OFFLINE && oldStatus != ServerStatus.UNKNOWN) {
+                        
+                        if (!server.isMaintenanceMode()) {
+                            log.warn("🚨 ALARM GÖNDERİLİYOR: {}", server.getName());
+                            notificationService.sendOfflineAlert(server);
+                        } else {
+                            log.warn("Sunucu bakıma alındığı için bildirim atılmadı: {}", server.getName());
+                        }
                     }
                 }
 
             } catch (Exception e) {
-                log.error("Tarama Hatası - Sunucu: {}", server.getName(), e);
+                log.error("Hata: {}", server.getName(), e);
             }
         }
     }

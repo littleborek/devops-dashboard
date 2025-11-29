@@ -1,41 +1,49 @@
 package com.berk.devopsdashboard.service;
 
 import com.berk.devopsdashboard.entity.Server;
-import org.springframework.beans.factory.annotation.Value;
+import com.berk.devopsdashboard.repository.SystemSettingRepository; // BU İMPORT ÇOK ÖNEMLİ
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.time.format.DateTimeFormatter;
 
 @Service
+@RequiredArgsConstructor
 public class NotificationService {
 
-    @Value("${discord.webhook-url}")
-    private String webhookUrl;
+    private final SystemSettingRepository settingRepository;
 
     public void sendOfflineAlert(Server server) {
-        if (webhookUrl == null || webhookUrl.isBlank() || webhookUrl.contains("BURAYA_KOPYALA")) {
-            System.out.println("Discord Webhook URL ayarlanmamış, bildirim atılmadı.");
+
+        String webhookUrl = settingRepository.findBySettingKey("discord_webhook_url")
+                .map(setting -> setting.getSettingValue())
+                .orElse(""); 
+        if (webhookUrl == null || webhookUrl.length() < 10) {
+            System.out.println("Discord Webhook URL veritabanında bulunamadı veya geçersiz.");
             return;
         }
 
         try {
+            String time = java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss"));
+
 
             String jsonPayload = "{"
                     + "\"content\": \"🚨 **ALARM: SUNUCU ÇÖKTÜ!** 🚨\\n"
                     + "**Sunucu:** " + server.getName() + "\\n"
                     + "**IP:** " + server.getIpAddress() + "\\n"
-                    + "**Lokasyon:** " + server.getLocation() + "\\n"
-                    + "**Zaman:** " + java.time.LocalDateTime.now() + "\""
+                    + "**Kategori:** " + (server.getCategory() != null ? server.getCategory() : "Genel") + "\\n"
+                    + "**Zaman:** " + time + "\""
                     + "}";
 
             URL url = new URL(webhookUrl);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("POST");
             connection.setRequestProperty("Content-Type", "application/json");
-            connection.setRequestProperty("User-Agent", "Java-Discord-Webhook");
+            connection.setRequestProperty("User-Agent", "DevOpsDashboard");
             connection.setDoOutput(true);
 
             try (OutputStream os = connection.getOutputStream()) {
@@ -44,10 +52,14 @@ public class NotificationService {
             }
 
             int code = connection.getResponseCode();
-            System.out.println("Discord Bildirimi Gönderildi! Kod: " + code);
+            if (code == 204) {
+                System.out.println("Discord Bildirimi Başarılı!");
+            } else {
+                System.out.println("Discord Hatası. Kod: " + code);
+            }
 
         } catch (Exception e) {
-            System.err.println("Discord Bildirim Hatası: " + e.getMessage());
+            System.err.println("Bildirim Gönderilemedi: " + e.getMessage());
         }
     }
 }

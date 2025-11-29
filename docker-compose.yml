@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  devops-dashboard:
+    container_name: devops-dashboard
+    build: . # Dockerfile'ı buradan oku
+    image: berk/devops-dashboard:v1.0
+    ports:
+      - "8080:8080"
+    environment:
+      - DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/SENIN_LINKIN
+    volumes:
+      - ./dashboard-data:/app/data
+    restart: unless-stopped

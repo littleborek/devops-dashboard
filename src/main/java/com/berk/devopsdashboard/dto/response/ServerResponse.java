@@ -13,4 +13,7 @@ public class ServerResponse {
     private String location;
     private String status;
     private String customCertificate;
+    private String category;
+    private int lastResponseTime;
+    private boolean maintenanceMode;
 }

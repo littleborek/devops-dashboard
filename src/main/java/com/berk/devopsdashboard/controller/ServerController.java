@@ -1,5 +1,7 @@
 package com.berk.devopsdashboard.controller;
 
+
+
 import com.berk.devopsdashboard.dto.request.ServerRequest;
 import com.berk.devopsdashboard.dto.response.ServerResponse;
 import com.berk.devopsdashboard.service.ServerService;
@@ -8,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.berk.devopsdashboard.entity.ServerHistory;
+import com.berk.devopsdashboard.repository.ServerHistoryRepository;
 
 import java.util.List;
 
@@ -17,6 +21,7 @@ import java.util.List;
 public class ServerController {
 
     private final ServerService serverService;
+    private final ServerHistoryRepository historyRepository;
 
     @PostMapping
     public ResponseEntity<ServerResponse> createServer(@Valid @RequestBody ServerRequest request) {
@@ -40,5 +45,10 @@ public class ServerController {
     @PutMapping("/{id}")
     public ResponseEntity<ServerResponse> updateServer(@PathVariable Long id, @Valid @RequestBody ServerRequest request) {
         return ResponseEntity.ok(serverService.updateServer(id, request));
+    }
+    
+    @GetMapping("/{id}/history")
+    public ResponseEntity<List<ServerHistory>> getServerHistory(@PathVariable Long id) {
+        return ResponseEntity.ok(historyRepository.findTop50ByServerIdOrderByCheckTimeDesc(id));
     }
 }

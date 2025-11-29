@@ -33,4 +33,16 @@ public class Server extends BaseEntity {
 
     @OneToMany(mappedBy = "server", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Deployment> deployments;
+    
+    @Column(nullable = false, columnDefinition = "VARCHAR(255) DEFAULT 'Genel'")
+    private String category;
+    
+    @Column(columnDefinition = "integer default 0")
+    private int lastResponseTime;
+    
+    @OneToMany(mappedBy = "server", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ServerHistory> historyLogs;
+    
+    @Column(columnDefinition = "boolean default false")
+    private boolean maintenanceMode;
 }

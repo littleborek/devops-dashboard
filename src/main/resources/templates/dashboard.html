@@ -3,23 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DevOps Dashboard</title>
+    <title th:text="#{app.title}">DevOps Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-gray-900 text-gray-100 font-sans relative">
+<body class="bg-gray-900 text-gray-100 font-sans relative pb-20">
 
-    <nav class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-50">
+    <nav class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-50 shadow-lg">
         <div class="container mx-auto flex justify-between items-center">
             <h1 class="text-xl font-bold text-blue-400 flex items-center">
                 <i class="fa-solid fa-server mr-2"></i>
                 DevOps<span class="text-white">Dashboard</span>
             </h1>
-            <div class="space-x-4">
-                <span class="bg-gray-700 px-3 py-1 rounded text-sm text-gray-300">
-                    <i class="fa-solid fa-user-shield mr-1"></i> Admin
-                </span>
+            <div class="flex items-center space-x-4">
+                <div class="text-sm text-gray-300">
+                    <a href="?lang=tr" class="hover:text-white">TR</a> | 
+                    <a href="?lang=en" class="hover:text-white">EN</a>
+                </div>
+                <button onclick="openSettingsModal()" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-sm text-gray-300 transition" th:title="#{settings.title}">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+                <button onclick="openNewModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition text-sm flex items-center">
+                    <i class="fa-solid fa-plus mr-2"></i> <span th:text="#{nav.newServer}">Yeni Sunucu</span>
+                </button>
             </div>
         </div>
     </nav>
@@ -30,8 +38,8 @@
             <div class="bg-gray-800 p-6 rounded-lg shadow-lg border-l-4 border-blue-500">
                 <div class="flex justify-between items-center">
                     <div>
-                        <h3 class="text-gray-400 text-sm uppercase tracking-wider">Toplam Sunucu</h3>
-                        <p class="text-3xl font-bold mt-1" th:text="${servers.size()}">0</p>
+                        <h3 class="text-gray-400 text-sm uppercase tracking-wider" th:text="#{stats.total}">Toplam Sunucu</h3>
+                        <p class="text-3xl font-bold mt-1" id="totalServers">0</p>
                     </div>
                     <i class="fa-solid fa-network-wired text-blue-500 text-3xl opacity-50"></i>
                 </div>
@@ -40,296 +48,451 @@
             <div class="bg-gray-800 p-6 rounded-lg shadow-lg border-l-4 border-green-500">
                 <div class="flex justify-between items-center">
                     <div>
-                        <h3 class="text-gray-400 text-sm uppercase tracking-wider">Online</h3>
-                        <p class="text-3xl font-bold mt-1 text-green-400">Live</p>
+                        <h3 class="text-gray-400 text-sm uppercase tracking-wider" th:text="#{stats.online}">Online</h3>
+                        <p class="text-3xl font-bold mt-1 text-green-400" id="onlineServers">0</p>
                     </div>
                     <i class="fa-solid fa-heart-pulse text-green-500 text-3xl opacity-50"></i>
                 </div>
             </div>
 
-            <div class="bg-gray-800 p-6 rounded-lg shadow-lg border-l-4 border-purple-500">
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg border-l-4 border-red-500">
                 <div class="flex justify-between items-center">
                     <div>
-                        <h3 class="text-gray-400 text-sm uppercase tracking-wider">Son Tarama</h3>
-                        <p class="text-lg font-bold mt-2 text-gray-300">Otomatik</p>
+                        <h3 class="text-gray-400 text-sm uppercase tracking-wider" th:text="#{stats.offline}">Offline</h3>
+                        <p class="text-3xl font-bold mt-1 text-red-400" id="offlineServers">0</p>
                     </div>
-                    <i class="fa-solid fa-clock text-purple-500 text-3xl opacity-50"></i>
+                    <i class="fa-solid fa-triangle-exclamation text-red-500 text-3xl opacity-50"></i>
                 </div>
             </div>
         </div>
 
-        <div class="bg-gray-800 rounded-lg shadow-xl overflow-hidden">
-            <div class="p-5 border-b border-gray-700 flex justify-between items-center bg-gray-800">
-                <h2 class="text-xl font-semibold text-white">Sunucu Listesi</h2>
-                <button onclick="openNewModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition flex items-center">
-                    <i class="fa-solid fa-plus mr-2"></i> Yeni Sunucu
-                </button>
-            </div>
-            
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-gray-750 text-gray-400 text-xs uppercase tracking-wider border-b border-gray-700">
-                            <th class="p-4">Durum</th>
-                            <th class="p-4">Sunucu Adı</th>
-                            <th class="p-4">IP / Adres</th>
-                            <th class="p-4">Lokasyon</th>
-                            <th class="p-4">OS</th>
-                            <th class="p-4 text-right">İşlemler</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-700 text-sm">
-                        <tr th:each="server : ${servers}" class="hover:bg-gray-700 transition duration-150">
-                            <td class="p-4 whitespace-nowrap" th:id="'status-cell-' + ${server.id}">
-                                <span th:if="${server.status == 'ONLINE'}" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-900/50 text-green-400 border border-green-800">
-                                    <span class="w-2 h-2 mr-2 bg-green-400 rounded-full animate-pulse shadow-[0_0_10px_#4ade80]"></span> ONLINE
-                                </span>
-                                <span th:if="${server.status == 'OFFLINE'}" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-900/50 text-red-400 border border-red-800">
-                                    <span class="w-2 h-2 mr-2 bg-red-400 rounded-full"></span> OFFLINE
-                                </span>
-                                <span th:if="${server.status == 'UNKNOWN'}" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-700 text-gray-300 border border-gray-600">
-                                    <span class="w-2 h-2 mr-2 bg-gray-400 rounded-full"></span> UNKNOWN
-                                </span>
-                            </td>
-                            <td class="p-4 font-semibold text-white" th:text="${server.name}">Server</td>
-                            <td class="p-4 text-blue-300 font-mono" th:text="${server.ipAddress}">127.0.0.1</td>
-                            <td class="p-4 text-gray-300" th:text="${server.location}">Loc</td>
-                            <td class="p-4 text-gray-400">
-                                <i class="fa-brands fa-linux mr-2"></i> <span th:text="${server.operatingSystem}">OS</span>
-                            </td>
-                            <td class="p-4 text-right space-x-2">
-                                <a th:href="@{/server/{id}(id=${server.id})}" class="text-gray-400 hover:text-green-400 transition" title="Deploy Geçmişi">
-                                    <i class="fa-solid fa-rocket"></i>
-                                </a>
-                                
-                                <button th:onclick="'openEditModal(' + ${server.id} + ')'" class="text-gray-400 hover:text-yellow-400 transition" title="Düzenle">
-                                    <i class="fa-solid fa-pen"></i>
-                                </button>
-
-                                <button th:onclick="'deleteServer(' + ${server.id} + ')'" class="text-gray-400 hover:text-red-400 transition" title="Sil">
-                                    <i class="fa-solid fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                
-                <div th:if="${servers.empty}" class="p-10 text-center text-gray-500">
-                    <i class="fa-solid fa-server text-6xl mb-4 opacity-20"></i>
-                    <p class="text-lg">Henüz izlenen bir sunucu yok.</p>
-                </div>
+        <div id="serverContainer" class="space-y-4">
+            <div class="text-center text-gray-500 mt-10">
+                <i class="fa-solid fa-circle-notch fa-spin text-3xl"></i>
+                <p class="mt-2" th:text="#{loading.text}">Sunucular yükleniyor...</p>
             </div>
         </div>
+
     </div>
 
     <div id="addServerModal" class="fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-50 backdrop-blur-sm transition-opacity">
         <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg border border-gray-700 transform transition-all scale-100 max-h-[90vh] overflow-y-auto">
             <div class="p-6 border-b border-gray-700 flex justify-between items-center bg-gray-800 sticky top-0 z-10">
-                <h3 id="modalTitle" class="text-xl font-bold text-white">Yeni Sunucu Ekle</h3>
+                <h3 id="modalTitle" class="text-xl font-bold text-white" th:text="#{modal.newServer.title}">Yeni Sunucu Ekle</h3>
                 <button onclick="closeModal()" class="text-gray-400 hover:text-white">
                     <i class="fa-solid fa-xmark text-xl"></i>
                 </button>
             </div>
-            
             <div class="p-6 space-y-4">
                 <input type="hidden" id="serverId">
-
                 <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-1">Sunucu Adı</label>
-                    <input type="text" id="serverName" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Örn: Prod-DB-01">
+                    <label class="block text-sm font-medium text-gray-400 mb-1" th:text="#{modal.label.serverName}">Sunucu Adı</label>
+                    <input type="text" id="serverName" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" th:placeholder="#{modal.placeholder.serverName}">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-1">IP Adresi / URL</label>
-                    <input type="text" id="serverIp" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Örn: 192.168.1.50 veya https://site.com">
+                    <label class="block text-sm font-medium text-gray-400 mb-1" th:text="#{modal.label.ipAddress}">IP Adresi / URL</label>
+                    <input type="text" id="serverIp" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" th:placeholder="#{modal.placeholder.ipAddress}">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-1">İşletim Sistemi</label>
-                        <input type="text" id="serverOs" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Örn: Ubuntu">
+                        <label class="block text-sm font-medium text-gray-400 mb-1" th:text="#{modal.label.os}">İşletim Sistemi</label>
+                        <input type="text" id="serverOs" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-1">Lokasyon</label>
-                        <input type="text" id="serverLocation" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Örn: Frankfurt">
+                        <label class="block text-sm font-medium text-gray-400 mb-1" th:text="#{modal.label.location}">Lokasyon</label>
+                        <input type="text" id="serverLocation" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     </div>
                 </div>
-
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-400 mb-1" th:text="#{modal.label.category}">Kategori / Grup</label>
+                    <input type="text" id="serverCategory" list="categoryList" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none" th:placeholder="#{modal.placeholder.category}">
+                    <datalist id="categoryList">
+                        <option value="Local"><option value="Oracle Cloud"><option value="Cloudflare"><option value="VPN">
+                    </datalist>
+                </div>
                 <div class="border-t border-gray-700 pt-4 mt-2">
-                    <label class="block text-sm font-medium text-yellow-500 mb-1">
-                        <i class="fa-solid fa-lock mr-1"></i> Özel SSL Sertifikası (PEM Formatında)
-                    </label>
-                    <p class="text-xs text-gray-500 mb-2">Self-signed sertifikalı sunucular (OpenVPN vb.) için sertifika içeriğini buraya yapıştırın.</p>
-                    <textarea id="serverCert" rows="4" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-xs font-mono focus:ring-2 focus:ring-yellow-500 focus:outline-none placeholder-gray-600" placeholder="-----BEGIN CERTIFICATE-----..."></textarea>
+                    <label class="block text-sm font-medium text-yellow-500 mb-1"><i class="fa-solid fa-lock mr-1"></i> <span th:text="#{modal.label.ssl}">Özel SSL Sertifikası (PEM)</span></label>
+                    <textarea id="serverCert" rows="3" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-xs font-mono focus:ring-2 focus:ring-yellow-500 focus:outline-none placeholder-gray-500" placeholder="-----BEGIN CERTIFICATE-----..."></textarea>
                 </div>
             </div>
-
             <div class="p-6 border-t border-gray-700 flex justify-end space-x-3 bg-gray-800 rounded-b-xl sticky bottom-0">
-                <button onclick="closeModal()" class="px-4 py-2 text-gray-300 hover:text-white transition">İptal</button>
-                <button onclick="saveServer()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition flex items-center">
-                    <i class="fa-solid fa-save mr-2"></i> Kaydet
+                <button onclick="closeModal()" class="px-4 py-2 text-gray-300 hover:text-white transition" th:text="#{modal.button.cancel}">İptal</button>
+                <button onclick="saveServer()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition flex items-center"><i class="fa-solid fa-save mr-2"></i> <span th:text="#{modal.button.save}">Kaydet</span></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-md border border-gray-700">
+            <div class="p-6 border-b border-gray-700 flex justify-between items-center bg-gray-800 rounded-t-xl">
+                <h3 class="text-xl font-bold text-white"><i class="fa-solid fa-gear mr-2 text-gray-400"></i> <span th:text="#{settings.title}">Ayarlar</span></h3>
+                <button onclick="closeSettingsModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1" th:text="#{settings.label.webhook}">Discord Webhook URL</label>
+                    <input type="text" id="discordWebhook" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="https://discord.com/api/webhooks/...">
+                    <p class="text-xs text-gray-500 mt-1" th:text="#{settings.text.webhook}">Sunucu çöktüğünde bu adrese bildirim gönderilir.</p>
+                </div>
+            </div>
+            <div class="p-6 border-t border-gray-700 flex justify-end space-x-3 bg-gray-800 rounded-b-xl">
+                <button onclick="saveSettings()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-medium transition flex items-center">
+                    <i class="fa-solid fa-check mr-2"></i> <span th:text="#{settings.button.save}">Kaydet</span>
                 </button>
             </div>
         </div>
     </div>
 
+    <div id="monitorModal" class="fixed inset-0 bg-black bg-opacity-80 hidden flex items-center justify-center z-50 backdrop-blur-sm transition-opacity">
+        <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl border border-gray-700 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-white flex items-center">
+                    <i class="fa-solid fa-chart-line mr-2 text-blue-400"></i> <span id="monitorServerName" th:text="#{monitor.title}">Sunucu Performansı</span>
+                </h3>
+                <button onclick="document.getElementById('monitorModal').classList.add('hidden')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-2xl"></i></button>
+            </div>
+            
+            <div class="bg-gray-900 rounded p-4 border border-gray-700 h-80 relative">
+                <canvas id="uptimeChart"></canvas>
+            </div>
+            
+            <div class="mt-4 flex justify-between text-xs text-gray-500">
+                <span th:text="#{monitor.text.info}">* Veriler son 50 taramayı gösterir</span>
+                <span><i class="fa-solid fa-circle text-green-400 text-[10px]"></i> <span th:text="#{monitor.label.online}">Online</span> <i class="fa-solid fa-circle text-red-400 text-[10px] ml-2"></i> <span th:text="#{monitor.label.offline}">Offline</span></span>
+            </div>
+        </div>
+    </div>
+
+    <div id="i18nData" 
+         th:data-swal-settings-saved-title="#{js.swal.settingsSaved.title}"
+         th:data-swal-server-saved-title="#{js.swal.serverSaved.title}"
+         th:data-swal-delete-title="#{js.swal.delete.title}"
+         th:data-swal-delete-confirm="#{js.swal.delete.confirm}"
+         th:data-swal-error-title="#{js.swal.error.title}"
+         th:data-swal-missing-info-title="#{js.swal.missingInfo.title}"
+         th:data-swal-missing-info-text="#{js.swal.missingInfo.text}"
+         th:data-chart-label-response-time="#{js.chart.label.responseTime}"
+         th:data-udp-service="#{udp.service}"
+         th:data-no-servers="#{no.servers}"
+         th:data-category-general="#{category.general}"
+         th:data-modal-new-title="#{modal.newServer.title}"
+         th:data-modal-edit-title="#{modal.editServer.title}"
+         class="hidden"></div>
+
     <script>
+        let allServers = []; 
         let isEditMode = false;
+        let myChart = null;
 
+        const i18n = document.getElementById('i18nData').dataset;
 
-        function closeModal() {
-            document.getElementById('addServerModal').classList.add('hidden');
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchServers();
+            setInterval(fetchServers, 5000);
+        });
+
+        function fetchServers() {
+            fetch('/api/v1/servers')
+                .then(res => res.json())
+                .then(data => {
+                    allServers = data; 
+                    updateStats(data);
+                    renderGroups(data);
+                })
+                .catch(err => console.error("Veri hatası:", err));
         }
 
+        function updateStats(servers) {
+            document.getElementById('totalServers').innerText = servers.length;
+            document.getElementById('onlineServers').innerText = servers.filter(s => s.status === 'ONLINE').length;
+            document.getElementById('offlineServers').innerText = servers.filter(s => s.status === 'OFFLINE').length;
+        }
 
+        function renderGroups(servers) {
+            const container = document.getElementById('serverContainer');
+            
+            const openDetails = Array.from(container.querySelectorAll('details[open]')).map(d => d.id);
+
+            container.innerHTML = ''; 
+
+            const groups = servers.reduce((acc, server) => {
+                const cat = server.category || i18n.categoryGeneral;
+                if (!acc[cat]) acc[cat] = [];
+                acc[cat].push(server);
+                return acc;
+            }, {});
+
+            if (Object.keys(groups).length === 0) {
+                container.innerHTML = `<div class="text-center text-gray-500 p-10">${i18n.noServers}</div>`;
+                return;
+            }
+
+            for (const [category, groupServers] of Object.entries(groups)) {
+                const total = groupServers.length;
+                const online = groupServers.filter(s => s.status === 'ONLINE').length;
+                const isAllOnline = total === online && total > 0;
+                const statusColor = isAllOnline ? 'text-green-400' : (online === 0 ? 'text-red-400' : 'text-yellow-400');
+                
+                const groupId = 'group-' + category.replace(/\s+/g, '-');
+                const isOpen = openDetails.includes(groupId) ? 'open' : ''; 
+
+                const html = `
+                <details id="${groupId}" class="group bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-700 mb-4" ${isOpen}>
+                    <summary class="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-750 transition list-none select-none">
+                        <div class="flex items-center space-x-3">
+                            <i class="fa-solid fa-chevron-right text-gray-500 group-open:rotate-90 transition-transform duration-200"></i>
+                            <h3 class="text-lg font-bold text-white">${category}</h3>
+                            <span class="bg-gray-700 text-xs px-2 py-1 rounded text-gray-300">${total}</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm font-mono ${statusColor}">${online}/${total} Online</span>
+                            <i class="fa-solid fa-circle text-[10px] ${statusColor}"></i>
+                        </div>
+                    </summary>
+                    <div class="p-0 border-t border-gray-700 bg-gray-900/30">
+                        <table class="w-full text-left">
+                            <tbody class="divide-y divide-gray-700 text-sm">
+                                ${groupServers.map(server => renderServerRow(server)).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </details>
+                `;
+                container.innerHTML += html;
+            }
+        }
+
+		function renderServerRow(server) {
+		            let statusBadge = '';
+		       
+		            const maintenanceIcon = server.maintenanceMode ? 'fa-pause-circle text-yellow-500' : 'fa-wrench text-gray-500';
+		            
+		            let pingColor = 'text-gray-500';
+		            let pingText = '-';
+
+		            if (server.lastResponseTime === -1) {
+		                pingText = `<span class="text-blue-400 font-bold"><i class="fa-solid fa-shield-halved mr-1"></i>${i18n.udpService}</span>`;
+		            } else if (server.lastResponseTime > 0) {
+		                pingText = `<i class="fa-solid fa-stopwatch mr-1"></i> ${server.lastResponseTime} ms`;
+		                
+		                if (server.lastResponseTime < 500) {
+		                    pingColor = 'text-green-400';
+		                } else if (server.lastResponseTime < 1000) {
+		                    pingColor = 'text-yellow-400';
+		                } else {
+		                    pingColor = 'text-red-400 font-bold';
+		                }
+		            }
+
+		        
+		            if (server.status === 'ONLINE') {
+		                statusBadge = `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-900/50 text-green-400 border border-green-800 w-24 justify-center"><span class="w-1.5 h-1.5 mr-2 bg-green-400 rounded-full animate-pulse"></span> ONLINE</span>`;
+		            } else if (server.status === 'OFFLINE') {
+		                statusBadge = `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-900/50 text-red-400 border border-red-800 w-24 justify-center"><span class="w-1.5 h-1.5 mr-2 bg-red-400 rounded-full"></span> OFFLINE</span>`;
+		            } else {
+		                statusBadge = `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-700 text-gray-300 w-24 justify-center">UNKNOWN</span>`;
+		            }
+
+		   
+		            return `
+		            <tr class="hover:bg-gray-700/50 transition cursor-pointer" onclick="openMonitorModal(${server.id})">
+		                
+		                <td class="p-4 w-32">${statusBadge}</td>
+		                
+		                <td class="p-4">
+		                    <div class="font-semibold text-white">${server.name}</div>
+		                    <div class="text-xs font-mono ${pingColor} mt-1 flex items-center">
+		                        ${pingText}
+		                    </div>
+		                </td>
+		                
+		                <td class="p-4 text-blue-300 font-mono text-xs">${server.ipAddress}</td>
+		                
+		                <td class="p-4 text-gray-400 text-xs hidden md:table-cell"><i class="fa-solid fa-location-dot mr-1"></i> ${server.location}</td>
+		                
+		                <td class="p-4 text-right space-x-3" onclick="event.stopPropagation()">
+		                    
+		                    <button onclick="toggleMaintenanceMode(${server.id}, ${server.maintenanceMode})" 
+		                            class="text-sm transition hover:text-white" 
+		                            title="${server.maintenanceMode ? 'Bakım Modunu Kapat' : 'Bakım Modunu Aç'}">
+		                        <i class="fa-solid ${maintenanceIcon}"></i>
+		                    </button>
+
+		                    <button onclick="openEditModal(${server.id})" class="text-gray-400 hover:text-yellow-400 transition" title="Düzenle">
+		                        <i class="fa-solid fa-pen"></i>
+		                    </button>
+		                    
+		                    <button onclick="deleteServer(${server.id})" class="text-gray-400 hover:text-red-400 transition" title="Sil">
+		                        <i class="fa-solid fa-trash"></i>
+		                    </button>
+		                </td>
+		            </tr>
+		            `;
+		        }
+
+        function openMonitorModal(serverId) {
+            document.getElementById('monitorModal').classList.remove('hidden');
+            const server = allServers.find(s => s.id === serverId);
+            if(server) document.getElementById('monitorServerName').innerText = server.name;
+
+            fetch(`/api/v1/servers/${serverId}/history`)
+                .then(res => res.json())
+                .then(historyData => {
+                    const data = historyData.reverse(); 
+                    const labels = data.map(d => new Date(d.checkTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}));
+                    const pingTimes = data.map(d => d.responseTime);
+                    const pointColors = data.map(d => d.status === 'ONLINE' ? '#4ade80' : '#f87171');
+
+                    drawChart(labels, pingTimes, pointColors);
+                });
+        }
+
+        function drawChart(labels, dataPoints, pointColors) {
+            const ctx = document.getElementById('uptimeChart').getContext('2d');
+            if (myChart) myChart.destroy();
+
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: i18n.chartLabelResponseTime,
+                        data: dataPoints,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: pointColors,
+                        pointRadius: 4,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#374151' }, ticks: { color: '#9ca3af' } },
+                        x: { grid: { display: false }, ticks: { color: '#9ca3af', maxTicksLimit: 10 } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function openSettingsModal() {
+            document.getElementById('settingsModal').classList.remove('hidden');
+            fetch('/api/v1/settings/discord_webhook_url')
+                .then(res => res.text())
+                .then(url => { document.getElementById('discordWebhook').value = url || ''; });
+        }
+        function closeSettingsModal() { document.getElementById('settingsModal').classList.add('hidden'); }
+        function saveSettings() {
+            const url = document.getElementById('discordWebhook').value;
+            fetch('/api/v1/settings', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ key: 'discord_webhook_url', value: url })
+            }).then(() => {
+                closeSettingsModal();
+                Swal.fire({icon: 'success', title: i18n.swalSettingsSavedTitle, timer: 1500, showConfirmButton: false, background: '#1f2937', color: '#fff'});
+            });
+        }
+
+        function closeModal() { document.getElementById('addServerModal').classList.add('hidden'); }
         function openNewModal() {
             isEditMode = false;
-            document.getElementById('modalTitle').innerText = "Yeni Sunucu Ekle";
+            document.getElementById('modalTitle').innerText = i18n.modalNewTitle;
             document.getElementById('serverId').value = '';
-            
             document.getElementById('serverName').value = '';
             document.getElementById('serverIp').value = '';
             document.getElementById('serverOs').value = '';
             document.getElementById('serverLocation').value = '';
+            document.getElementById('serverCategory').value = '';
             document.getElementById('serverCert').value = '';
-            
             document.getElementById('addServerModal').classList.remove('hidden');
         }
-
-
         function openEditModal(id) {
+            const server = allServers.find(s => s.id === id);
+            if(!server) return;
             isEditMode = true;
-            document.getElementById('modalTitle').innerText = "Sunucuyu Düzenle";
+            document.getElementById('modalTitle').innerText = i18n.modalEditTitle;
             document.getElementById('serverId').value = id;
-
-       
-            fetch('/api/v1/servers')
-            .then(res => res.json())
-            .then(servers => {
-                const server = servers.find(s => s.id === id);
-                if(server) {
-                    document.getElementById('serverName').value = server.name;
-                    document.getElementById('serverIp').value = server.ipAddress;
-                    document.getElementById('serverOs').value = server.operatingSystem;
-                    document.getElementById('serverLocation').value = server.location;
-                    document.getElementById('serverCert').value = server.customCertificate || ''; 
-                    
-                    document.getElementById('addServerModal').classList.remove('hidden');
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                Swal.fire({icon: 'error', title: 'Hata', text: 'Sunucu bilgileri alınamadı.'});
-            });
+            document.getElementById('serverName').value = server.name;
+            document.getElementById('serverIp').value = server.ipAddress;
+            document.getElementById('serverOs').value = server.operatingSystem;
+            document.getElementById('serverLocation').value = server.location;
+            document.getElementById('serverCategory').value = server.category || i18n.categoryGeneral;
+            document.getElementById('serverCert').value = server.customCertificate || '';
+            document.getElementById('addServerModal').classList.remove('hidden');
         }
-
         function saveServer() {
             const id = document.getElementById('serverId').value;
-            const serverData = {
+            const data = {
                 name: document.getElementById('serverName').value,
                 ipAddress: document.getElementById('serverIp').value,
                 operatingSystem: document.getElementById('serverOs').value,
                 location: document.getElementById('serverLocation').value,
+                category: document.getElementById('serverCategory').value,
                 customCertificate: document.getElementById('serverCert').value
             };
+            if(!data.name || !data.ipAddress) return Swal.fire({icon: 'warning', title: i18n.swalMissingInfoTitle, text: i18n.swalMissingInfoText, background: '#1f2937', color: '#fff'});
 
-            if(!serverData.name || !serverData.ipAddress) {
-                Swal.fire({ icon: 'warning', title: 'Eksik Bilgi', text: 'Sunucu Adı ve Adres alanları zorunludur.', background: '#1f2937', color: '#fff' });
-                return;
-            }
+            const url = isEditMode && id ? '/api/v1/servers/' + id : '/api/v1/servers';
+            const method = isEditMode && id ? 'PUT' : 'POST';
 
-            let url = '/api/v1/servers';
-            let method = 'POST';
-
-            if (isEditMode && id) {
-                url = '/api/v1/servers/' + id;
-                method = 'PUT';
-            }
-
-            fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(serverData)
-            })
-            .then(response => {
-                if (response.ok) {
+            fetch(url, { method: method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) })
+            .then(res => {
+                if(res.ok) {
                     closeModal();
-                    Swal.fire({ 
-                        icon: 'success', 
-                        title: isEditMode ? 'Güncellendi!' : 'Eklendi!', 
-                        timer: 1500, showConfirmButton: false, background: '#1f2937', color: '#fff' 
-                    }).then(() => window.location.reload());
-                } else {
-                    Swal.fire({ icon: 'error', title: 'Hata', text: 'İşlem başarısız.', background: '#1f2937', color: '#fff' });
+                    fetchServers(); 
+                    Swal.fire({icon: 'success', title: i18n.swalServerSavedTitle, timer: 1000, showConfirmButton: false, background: '#1f2937', color: '#fff'});
                 }
             });
         }
-
-
         function deleteServer(id) {
-            Swal.fire({
-                title: 'Emin misiniz?',
-                text: "Bu sunucu takipten çıkarılacak!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Evet, Sil!',
-                cancelButtonText: 'İptal',
-                background: '#1f2937',
-                color: '#fff'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    fetch('/api/v1/servers/' + id, { method: 'DELETE' })
-                    .then(response => {
-                        if (response.ok || response.status === 204) {
-                            Swal.fire({
-                                title: 'Silindi!',
-                                icon: 'success',
-                                background: '#1f2937', color: '#fff',
-                                timer: 1500, showConfirmButton: false
-                            }).then(() => window.location.reload());
-                        } else {
-                            Swal.fire({ icon: 'error', title: 'Hata', background: '#1f2937', color: '#fff' });
-                        }
-                    });
-                }
+            Swal.fire({title: i18n.swalDeleteTitle, icon: 'warning', showCancelButton: true, confirmButtonText: i18n.swalDeleteConfirm, background: '#1f2937', color: '#fff'}).then(r => {
+                if(r.isConfirmed) fetch('/api/v1/servers/' + id, {method: 'DELETE'}).then(() => fetchServers());
             });
         }
 
-        setInterval(function() {
-            fetch('/api/v1/servers')
-            .then(response => response.json())
-            .then(data => {
-                data.forEach(server => {
-                    const cellId = 'status-cell-' + server.id;
-                    const cellElement = document.getElementById(cellId);
-                    
-                    if (cellElement) {
-                        let newHtml = '';
-                        if (server.status === 'ONLINE') {
-                            newHtml = `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-900/50 text-green-400 border border-green-800">
-                                        <span class="w-2 h-2 mr-2 bg-green-400 rounded-full animate-pulse shadow-[0_0_10px_#4ade80]"></span> ONLINE
-                                       </span>`;
-                        } else if (server.status === 'OFFLINE') {
-                            newHtml = `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-900/50 text-red-400 border border-red-800">
-                                        <span class="w-2 h-2 mr-2 bg-red-400 rounded-full"></span> OFFLINE
-                                       </span>`;
-                        } else {
-                            newHtml = `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-700 text-gray-300 border border-gray-600">
-                                        <span class="w-2 h-2 mr-2 bg-gray-400 rounded-full"></span> UNKNOWN
-                                       </span>`;
-                        }
-                        cellElement.innerHTML = newHtml;
-                    }
-                });
-            })
-            .catch(err => console.error('Veri yenilenemedi:', err));
-        }, 5000);
-
-
-        window.onclick = function(event) {
-            const modal = document.getElementById('addServerModal');
-            if (event.target == modal) closeModal();
+        window.onclick = function(e) {
+            if(e.target == document.getElementById('addServerModal')) closeModal();
+            if(e.target == document.getElementById('settingsModal')) closeSettingsModal();
+            if(e.target == document.getElementById('monitorModal')) document.getElementById('monitorModal').classList.add('hidden');
         }
+		function toggleMaintenanceMode(id, currentStatus) {
+		    const newStatus = !currentStatus;
+		    const server = allServers.find(s => s.id === id);
+
+
+		    const data = {
+		        name: server.name,
+		        ipAddress: server.ipAddress,
+		        operatingSystem: server.operatingSystem,
+		        location: server.location,
+		        category: server.category,
+		        customCertificate: server.customCertificate,
+		        maintenanceMode: newStatus
+		    };
+		    
+		    fetch('/api/v1/servers/' + id, {
+		        method: 'PUT',
+		        headers: { 'Content-Type': 'application/json' },
+		        body: JSON.stringify(data)
+		    })
+		    .then(res => {
+		        if (res.ok) {
+		            fetchServers();
+		            Swal.fire({
+		                icon: 'success',
+		                title: newStatus ? 'Bakım Modu Açıldı' : 'Bakım Modu Kapatıldı',
+		                timer: 1000, showConfirmButton: false, background: '#1f2937', color: '#fff'
+		            });
+		        }
+		    })
+		    .catch(err => {
+		        Swal.fire({icon: 'error', title: 'Hata', text: 'Bakım modu değiştirilemedi.'});
+		    });
+		}
     </script>
 </body>
-</html>
