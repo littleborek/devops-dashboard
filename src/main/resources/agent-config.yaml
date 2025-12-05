@@ -1,0 +1,8 @@
+server:
+  port: 9090
+app:
+  mode: agent
+agent:
+  master-url: http://localhost:8080
+  my-ip: 192.168.99.100
+  server-name: Cloud-Test-VM

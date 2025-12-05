@@ -1,14 +1,50 @@
 version: '3.8'
 
 services:
+  postgres:
+    container_name: devops-db
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=devops_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data 
+    networks:
+      - devops-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   devops-dashboard:
     container_name: devops-dashboard
-    build: . # Dockerfile'ı buradan oku
+    build: . 
     image: berk/devops-dashboard:v1.0
     ports:
       - "8080:8080"
     environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/devops_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
       - DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/SENIN_LINKIN
+      - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
       - ./dashboard-data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
+      
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - devops-network
     restart: unless-stopped
+networks:
+  devops-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

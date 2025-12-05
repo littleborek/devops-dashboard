@@ -3,151 +3,204 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="#{app.title}">DevOps Dashboard</title>
+    <title>DevOps Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body class="bg-gray-900 text-gray-100 font-sans relative pb-20">
+    <style>
+        .tab-active { border-bottom: 2px solid #3b82f6; color: #3b82f6; }
+        .tab-inactive { color: #9ca3af; border-bottom: 2px solid transparent; }
+        .tab-inactive:hover { color: #d1d5db; border-color: #4b5563; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+
+        .progress-bar-container { background-color: #374151; border-radius: 9999px; height: 8px; overflow: hidden; }
+        .progress-bar { transition: width 0.5s ease-out; height: 100%; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans pb-20">
+
+    <!-- Navbar -->
     <nav class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-50 shadow-lg">
         <div class="container mx-auto flex justify-between items-center">
             <h1 class="text-xl font-bold text-blue-400 flex items-center">
                 <i class="fa-solid fa-server mr-2"></i>
                 DevOps<span class="text-white">Dashboard</span>
             </h1>
-            <div class="flex items-center space-x-4">
-                <div class="text-sm text-gray-300">
-                    <a href="?lang=tr" class="hover:text-white">TR</a> | 
-                    <a href="?lang=en" class="hover:text-white">EN</a>
-                </div>
-                <button onclick="openSettingsModal()" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-sm text-gray-300 transition" th:title="#{settings.title}">
+            <div class="flex items-center space-x-3">
+                <button onclick="openSettingsModal()" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-sm text-gray-300 transition" title="Ayarlar">
                     <i class="fa-solid fa-gear"></i>
                 </button>
                 <button onclick="openNewModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition text-sm flex items-center">
-                    <i class="fa-solid fa-plus mr-2"></i> <span th:text="#{nav.newServer}">Yeni Sunucu</span>
+                    <i class="fa-solid fa-plus mr-2"></i> <span class="hidden md:inline">Yeni Sunucu</span>
                 </button>
             </div>
         </div>
     </nav>
 
     <div class="container mx-auto mt-8 p-4">
-        
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div class="bg-gray-800 p-6 rounded-lg shadow-lg border-l-4 border-blue-500">
                 <div class="flex justify-between items-center">
                     <div>
-                        <h3 class="text-gray-400 text-sm uppercase tracking-wider" th:text="#{stats.total}">Toplam Sunucu</h3>
-                        <p class="text-3xl font-bold mt-1" id="totalServers">0</p>
+                        <h3 class="text-gray-400 text-xs uppercase tracking-wider">Sunucular</h3>
+                        <p class="text-2xl font-bold mt-1" id="totalServers">0</p>
                     </div>
                     <i class="fa-solid fa-network-wired text-blue-500 text-3xl opacity-50"></i>
                 </div>
             </div>
             
-            <div class="bg-gray-800 p-6 rounded-lg shadow-lg border-l-4 border-green-500">
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg border-l-4 border-cyan-500">
                 <div class="flex justify-between items-center">
                     <div>
-                        <h3 class="text-gray-400 text-sm uppercase tracking-wider" th:text="#{stats.online}">Online</h3>
-                        <p class="text-3xl font-bold mt-1 text-green-400" id="onlineServers">0</p>
+                        <h3 class="text-gray-400 text-xs uppercase tracking-wider">Docker</h3>
+                        <p class="text-2xl font-bold mt-1 text-cyan-400" id="dockerCount">0</p>
                     </div>
-                    <i class="fa-solid fa-heart-pulse text-green-500 text-3xl opacity-50"></i>
+                    <i class="fa-brands fa-docker text-cyan-500 text-3xl opacity-50"></i>
                 </div>
             </div>
 
-            <div class="bg-gray-800 p-6 rounded-lg shadow-lg border-l-4 border-red-500">
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg border-l-4 border-purple-500">
                 <div class="flex justify-between items-center">
                     <div>
-                        <h3 class="text-gray-400 text-sm uppercase tracking-wider" th:text="#{stats.offline}">Offline</h3>
-                        <p class="text-3xl font-bold mt-1 text-red-400" id="offlineServers">0</p>
+                        <h3 class="text-gray-400 text-xs uppercase tracking-wider">K8s Pods</h3>
+                        <p class="text-2xl font-bold mt-1 text-purple-400" id="k8sCount">0</p>
                     </div>
-                    <i class="fa-solid fa-triangle-exclamation text-red-500 text-3xl opacity-50"></i>
+                    <i class="fa-solid fa-cubes text-purple-500 text-3xl opacity-50"></i>
                 </div>
             </div>
         </div>
 
-        <div id="serverContainer" class="space-y-4">
-            <div class="text-center text-gray-500 mt-10">
-                <i class="fa-solid fa-circle-notch fa-spin text-3xl"></i>
-                <p class="mt-2" th:text="#{loading.text}">Sunucular yükleniyor...</p>
+        <!-- TAB MENU -->
+        <div class="flex space-x-6 border-b border-gray-700 mb-6">
+            <button onclick="switchTab('servers')" id="tab-servers" class="pb-3 text-sm font-medium transition tab-active flex items-center">
+                <i class="fa-solid fa-server mr-2"></i>Sunucular
+            </button>
+            <button onclick="switchTab('docker')" id="tab-docker" class="pb-3 text-sm font-medium transition tab-inactive flex items-center">
+                <i class="fa-brands fa-docker mr-2"></i>Docker Monitor
+            </button>
+            <button onclick="switchTab('k8s')" id="tab-k8s" class="pb-3 text-sm font-medium transition tab-inactive flex items-center">
+                <i class="fa-solid fa-dharmachakra mr-2"></i>Kubernetes
+            </button>
+        </div>
+
+        <!-- TAB 1 -->
+        <div id="content-servers" class="fade-in block space-y-4">
+            <div class="text-center text-gray-500 py-10">
+                <i class="fa-solid fa-circle-notch fa-spin text-2xl"></i>
+                <p class="mt-2">Sunucular yükleniyor...</p>
+            </div>
+        </div>
+
+        <!-- TAB 2: DOCKER -->
+        <div id="content-docker" class="hidden fade-in">
+            <div class="overflow-x-auto rounded-lg border border-gray-700">
+                <table class="w-full text-left bg-gray-800">
+                    <thead class="bg-gray-700 text-gray-300 uppercase text-xs font-semibold">
+                        <tr>
+                            <th class="p-4 w-24">Durum</th>
+                            <th class="p-4">Container</th>
+                            <th class="p-4">Image</th>
+                            <th class="p-4">ID</th>
+                            <th class="p-4">Son Güncelleme</th>
+                        </tr>
+                    </thead>
+                    <tbody id="docker-table-body" class="divide-y divide-gray-700 text-sm"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 3: K8S -->
+        <div id="content-k8s" class="hidden fade-in">
+            <div class="overflow-x-auto rounded-lg border border-gray-700">
+                <table class="w-full text-left bg-gray-800">
+                    <thead class="bg-gray-700 text-gray-300 uppercase text-xs font-semibold">
+                        <tr>
+                            <th class="p-4">Durum</th>
+                            <th class="p-4">Pod Name</th>
+                            <th class="p-4">Namespace</th>
+                            <th class="p-4">Node</th>
+                            <th class="p-4">Host IP</th>
+                        </tr>
+                    </thead>
+                    <tbody id="k8s-table-body" class="divide-y divide-gray-700 text-sm">
+                        <tr><td colspan="5" class="p-4 text-center text-gray-500">Yükleniyor...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
     </div>
 
-    <div id="addServerModal" class="fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-50 backdrop-blur-sm transition-opacity">
-        <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg border border-gray-700 transform transition-all scale-100 max-h-[90vh] overflow-y-auto">
+    <!-- MODAL -->
+    <div id="addServerModal" class="fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg border border-gray-700 max-h-[90vh] overflow-y-auto">
             <div class="p-6 border-b border-gray-700 flex justify-between items-center bg-gray-800 sticky top-0 z-10">
-                <h3 id="modalTitle" class="text-xl font-bold text-white" th:text="#{modal.newServer.title}">Yeni Sunucu Ekle</h3>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-white">
-                    <i class="fa-solid fa-xmark text-xl"></i>
-                </button>
+                <h3 id="modalTitle" class="text-xl font-bold text-white">Yeni Sunucu Ekle</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
             <div class="p-6 space-y-4">
                 <input type="hidden" id="serverId">
                 <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-1" th:text="#{modal.label.serverName}">Sunucu Adı</label>
-                    <input type="text" id="serverName" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" th:placeholder="#{modal.placeholder.serverName}">
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Sunucu Adı</label>
+                    <input type="text" id="serverName" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Örn: Production DB">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-1" th:text="#{modal.label.ipAddress}">IP Adresi / URL</label>
-                    <input type="text" id="serverIp" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" th:placeholder="#{modal.placeholder.ipAddress}">
+                    <label class="block text-sm font-medium text-gray-400 mb-1">IP Adresi / Hostname</label>
+                    <input type="text" id="serverIp" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="192.168.1.10">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-1" th:text="#{modal.label.os}">İşletim Sistemi</label>
-                        <input type="text" id="serverOs" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <label class="block text-sm font-medium text-gray-400 mb-1">İşletim Sistemi</label>
+                        <input type="text" id="serverOs" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:outline-none">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-1" th:text="#{modal.label.location}">Lokasyon</label>
-                        <input type="text" id="serverLocation" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Lokasyon</label>
+                        <input type="text" id="serverLocation" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:outline-none">
                     </div>
                 </div>
-                <div class="mt-4">
-                    <label class="block text-sm font-medium text-gray-400 mb-1" th:text="#{modal.label.category}">Kategori / Grup</label>
-                    <input type="text" id="serverCategory" list="categoryList" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none" th:placeholder="#{modal.placeholder.category}">
-                    <datalist id="categoryList">
-                        <option value="Local"><option value="Oracle Cloud"><option value="Cloudflare"><option value="VPN">
-                    </datalist>
-                </div>
-                <div class="border-t border-gray-700 pt-4 mt-2">
-                    <label class="block text-sm font-medium text-yellow-500 mb-1"><i class="fa-solid fa-lock mr-1"></i> <span th:text="#{modal.label.ssl}">Özel SSL Sertifikası (PEM)</span></label>
-                    <textarea id="serverCert" rows="3" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-xs font-mono focus:ring-2 focus:ring-yellow-500 focus:outline-none placeholder-gray-500" placeholder="-----BEGIN CERTIFICATE-----..."></textarea>
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Kategori</label>
+                    <input type="text" id="serverCategory" list="categoryList" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:outline-none" placeholder="General">
+                    <datalist id="categoryList"><option value="Database"><option value="Web Server"><option value="Cache"></datalist>
                 </div>
             </div>
             <div class="p-6 border-t border-gray-700 flex justify-end space-x-3 bg-gray-800 rounded-b-xl sticky bottom-0">
-                <button onclick="closeModal()" class="px-4 py-2 text-gray-300 hover:text-white transition" th:text="#{modal.button.cancel}">İptal</button>
-                <button onclick="saveServer()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition flex items-center"><i class="fa-solid fa-save mr-2"></i> <span th:text="#{modal.button.save}">Kaydet</span></button>
-            </div>
-        </div>
-    </div>
-
-    <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-50 backdrop-blur-sm">
-        <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-md border border-gray-700">
-            <div class="p-6 border-b border-gray-700 flex justify-between items-center bg-gray-800 rounded-t-xl">
-                <h3 class="text-xl font-bold text-white"><i class="fa-solid fa-gear mr-2 text-gray-400"></i> <span th:text="#{settings.title}">Ayarlar</span></h3>
-                <button onclick="closeSettingsModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
-            </div>
-            <div class="p-6 space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-1" th:text="#{settings.label.webhook}">Discord Webhook URL</label>
-                    <input type="text" id="discordWebhook" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="https://discord.com/api/webhooks/...">
-                    <p class="text-xs text-gray-500 mt-1" th:text="#{settings.text.webhook}">Sunucu çöktüğünde bu adrese bildirim gönderilir.</p>
-                </div>
-            </div>
-            <div class="p-6 border-t border-gray-700 flex justify-end space-x-3 bg-gray-800 rounded-b-xl">
-                <button onclick="saveSettings()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-medium transition flex items-center">
-                    <i class="fa-solid fa-check mr-2"></i> <span th:text="#{settings.button.save}">Kaydet</span>
+                <button onclick="closeModal()" class="px-4 py-2 text-gray-300 hover:text-white transition">İptal</button>
+                <button onclick="saveServer()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition flex items-center">
+                    <i class="fa-solid fa-save mr-2"></i> Kaydet
                 </button>
             </div>
         </div>
     </div>
 
+    <!-- MODAL -->
+    <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-md border border-gray-700">
+            <div class="p-6 border-b border-gray-700 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-white">Ayarlar</h3>
+                <button onclick="document.getElementById('settingsModal').classList.add('hidden')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Discord Webhook URL</label>
+                    <input type="text" id="discordWebhook" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm focus:outline-none">
+                </div>
+            </div>
+            <div class="p-6 border-t border-gray-700 flex justify-end">
+                <button onclick="saveSettings()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-medium transition">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL -->
     <div id="monitorModal" class="fixed inset-0 bg-black bg-opacity-80 hidden flex items-center justify-center z-50 backdrop-blur-sm transition-opacity">
         <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl border border-gray-700 p-6">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold text-white flex items-center">
-                    <i class="fa-solid fa-chart-line mr-2 text-blue-400"></i> <span id="monitorServerName" th:text="#{monitor.title}">Sunucu Performansı</span>
+                    <i class="fa-solid fa-chart-line mr-2 text-blue-400"></i> <span id="monitorServerName">Sunucu Performansı</span>
                 </h3>
                 <button onclick="document.getElementById('monitorModal').classList.add('hidden')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-2xl"></i></button>
             </div>
@@ -157,183 +210,211 @@
             </div>
             
             <div class="mt-4 flex justify-between text-xs text-gray-500">
-                <span th:text="#{monitor.text.info}">* Veriler son 50 taramayı gösterir</span>
-                <span><i class="fa-solid fa-circle text-green-400 text-[10px]"></i> <span th:text="#{monitor.label.online}">Online</span> <i class="fa-solid fa-circle text-red-400 text-[10px] ml-2"></i> <span th:text="#{monitor.label.offline}">Offline</span></span>
+                <span>* Veriler son 50 taramayı gösterir</span>
+                <span><i class="fa-solid fa-circle text-green-400 text-[10px]"></i> Online <i class="fa-solid fa-circle text-red-400 text-[10px] ml-2"></i> Offline</span>
             </div>
         </div>
     </div>
 
-    <div id="i18nData" 
-         th:data-swal-settings-saved-title="#{js.swal.settingsSaved.title}"
-         th:data-swal-server-saved-title="#{js.swal.serverSaved.title}"
-         th:data-swal-delete-title="#{js.swal.delete.title}"
-         th:data-swal-delete-confirm="#{js.swal.delete.confirm}"
-         th:data-swal-error-title="#{js.swal.error.title}"
-         th:data-swal-missing-info-title="#{js.swal.missingInfo.title}"
-         th:data-swal-missing-info-text="#{js.swal.missingInfo.text}"
-         th:data-chart-label-response-time="#{js.chart.label.responseTime}"
-         th:data-udp-service="#{udp.service}"
-         th:data-no-servers="#{no.servers}"
-         th:data-category-general="#{category.general}"
-         th:data-modal-new-title="#{modal.newServer.title}"
-         th:data-modal-edit-title="#{modal.editServer.title}"
-         class="hidden"></div>
-
     <script>
-        let allServers = []; 
+        let allServers = [];
         let isEditMode = false;
+        let currentTab = 'servers';
         let myChart = null;
-
-        const i18n = document.getElementById('i18nData').dataset;
 
         document.addEventListener('DOMContentLoaded', () => {
             fetchServers();
-            setInterval(fetchServers, 5000);
+            fetchDockerData();
+            fetchK8sData();
+            setInterval(() => {
+                if(currentTab === 'servers') fetchServers(false);
+                if(currentTab === 'docker') fetchDockerData();
+                if(currentTab === 'k8s') fetchK8sData();
+            }, 5000);
         });
-
-        function fetchServers() {
+        function switchTab(tabName) {
+            currentTab = tabName;
+            ['servers', 'docker', 'k8s'].forEach(t => {
+                const btn = document.getElementById('tab-' + t);
+                const content = document.getElementById('content-' + t);
+                if (t === tabName) {
+                    btn.classList.add('tab-active');
+                    btn.classList.remove('tab-inactive');
+                    content.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('tab-active');
+                    btn.classList.add('tab-inactive');
+                    content.classList.add('hidden');
+                }
+            });
+            if (tabName === 'servers') fetchServers();
+            if (tabName === 'docker') fetchDockerData();
+            if (tabName === 'k8s') fetchK8sData();
+        }
+        function fetchServers(showLoading = true) {
+            if(showLoading) document.getElementById('content-servers').innerHTML = '<div class="text-center text-gray-500 py-10">Yükleniyor...</div>';
+            
             fetch('/api/v1/servers')
                 .then(res => res.json())
                 .then(data => {
-                    allServers = data; 
-                    updateStats(data);
-                    renderGroups(data);
-                })
-                .catch(err => console.error("Veri hatası:", err));
+                    allServers = data;
+                    document.getElementById('totalServers').innerText = data.length;
+                    renderServers(data);
+                });
+        }
+        function getMetricColor(value) {
+            if (value >= 80) return 'bg-red-500';
+            if (value >= 50) return 'bg-yellow-500';
+            return 'bg-green-500';
         }
 
-        function updateStats(servers) {
-            document.getElementById('totalServers').innerText = servers.length;
-            document.getElementById('onlineServers').innerText = servers.filter(s => s.status === 'ONLINE').length;
-            document.getElementById('offlineServers').innerText = servers.filter(s => s.status === 'OFFLINE').length;
-        }
+        function renderServers(servers) {
+            const container = document.getElementById('content-servers');
+            container.innerHTML = '';
 
-        function renderGroups(servers) {
-            const container = document.getElementById('serverContainer');
-            
-            const openDetails = Array.from(container.querySelectorAll('details[open]')).map(d => d.id);
-
-            container.innerHTML = ''; 
-
-            const groups = servers.reduce((acc, server) => {
-                const cat = server.category || i18n.categoryGeneral;
-                if (!acc[cat]) acc[cat] = [];
-                acc[cat].push(server);
-                return acc;
-            }, {});
-
-            if (Object.keys(groups).length === 0) {
-                container.innerHTML = `<div class="text-center text-gray-500 p-10">${i18n.noServers}</div>`;
+            if (servers.length === 0) {
+                container.innerHTML = `<div class="text-center text-gray-500 p-10">Henüz sunucu eklenmemiş.</div>`;
                 return;
             }
 
-            for (const [category, groupServers] of Object.entries(groups)) {
-                const total = groupServers.length;
-                const online = groupServers.filter(s => s.status === 'ONLINE').length;
-                const isAllOnline = total === online && total > 0;
-                const statusColor = isAllOnline ? 'text-green-400' : (online === 0 ? 'text-red-400' : 'text-yellow-400');
-                
-                const groupId = 'group-' + category.replace(/\s+/g, '-');
-                const isOpen = openDetails.includes(groupId) ? 'open' : ''; 
+            servers.forEach(server => {
+                const statusColor = server.status === 'ONLINE' ? 'bg-green-500 shadow-[0_0_10px_rgba(74,222,128,0.5)]' : 'bg-red-500';
+                const maintenanceIcon = server.maintenanceMode ? 'fa-pause-circle text-yellow-500' : 'fa-wrench text-gray-500';
+
+                const cpuPercent = Math.round(server.cpuUsage || 0);
+                const ramPercent = Math.round(server.ramUsage || 0);
 
                 const html = `
-                <details id="${groupId}" class="group bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-700 mb-4" ${isOpen}>
-                    <summary class="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-750 transition list-none select-none">
-                        <div class="flex items-center space-x-3">
-                            <i class="fa-solid fa-chevron-right text-gray-500 group-open:rotate-90 transition-transform duration-200"></i>
-                            <h3 class="text-lg font-bold text-white">${category}</h3>
-                            <span class="bg-gray-700 text-xs px-2 py-1 rounded text-gray-300">${total}</span>
+                    <div class="bg-gray-800 p-4 rounded-lg flex justify-between items-center border border-gray-700 hover:bg-gray-750 transition group">
+                        <div class="flex items-center space-x-4">
+                            <!-- Detay sayfasına link -->
+                            <a href="/server/${server.id}" class="flex items-center space-x-4 hover:opacity-80 transition">
+                                <div class="w-3 h-3 ${statusColor} rounded-full transition-all duration-300"></div>
+                                <div>
+                                    <h4 class="font-bold text-white group-hover:text-blue-400 transition">${server.name}</h4>
+                                    <div class="flex items-center space-x-2 text-xs text-gray-400">
+                                        <span class="font-mono">${server.ipAddress}</span>
+                                        <span class="bg-gray-700 px-1.5 rounded text-[10px]">${server.category || 'General'}</span>
+                                    </div>
+                                </div>
+                            </a>
                         </div>
-                        <div class="flex items-center space-x-2">
-                            <span class="text-sm font-mono ${statusColor}">${online}/${total} Online</span>
-                            <i class="fa-solid fa-circle text-[10px] ${statusColor}"></i>
+                        
+                        <!-- Metrikler -->
+                        <div class="hidden lg:flex items-center space-x-6 text-sm">
+                            <!-- CPU -->
+                            <div class="w-24">
+                                <div class="flex justify-between items-center mb-1">
+                                    <i class="fa-solid fa-microchip text-gray-500 text-xs mr-2"></i>
+                                    <span class="font-mono text-gray-300">${cpuPercent}%</span>
+                                </div>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar ${getMetricColor(cpuPercent)}" style="width: ${cpuPercent}%;"></div>
+                                </div>
+                            </div>
+
+                            <!-- RAM -->
+                            <div class="w-24">
+                                <div class="flex justify-between items-center mb-1">
+                                    <i class="fa-solid fa-memory text-gray-500 text-xs mr-2"></i>
+                                    <span class="font-mono text-gray-300">${ramPercent}% (${server.totalRam || '-'})</span>
+                                </div>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar ${getMetricColor(ramPercent)}" style="width: ${ramPercent}%;"></div>
+                                </div>
+                            </div>
                         </div>
-                    </summary>
-                    <div class="p-0 border-t border-gray-700 bg-gray-900/30">
-                        <table class="w-full text-left">
-                            <tbody class="divide-y divide-gray-700 text-sm">
-                                ${groupServers.map(server => renderServerRow(server)).join('')}
-                            </tbody>
-                        </table>
+
+                        <!-- Aksiyon Butonları -->
+                        <div class="flex items-center space-x-4">
+                            <span class="text-xs font-mono text-blue-300 bg-blue-900/30 px-2 py-1 rounded hidden md:inline-block">
+                                ${server.lastResponseTime > 0 ? server.lastResponseTime + ' ms' : '-'}
+                            </span>
+                            
+                            <div class="flex space-x-2">
+                                <button onclick="openMonitorModal(${server.id})" class="p-2 rounded hover:bg-gray-700 text-purple-400 transition" title="Grafik İzle">
+                                    <i class="fa-solid fa-chart-line"></i>
+                                </button>
+                                <button onclick="toggleMaintenanceMode(${server.id}, ${server.maintenanceMode})" class="p-2 rounded hover:bg-gray-700 transition" title="Bakım Modu">
+                                    <i class="fa-solid ${maintenanceIcon}"></i>
+                                </button>
+                                <button onclick="openEditModal(${server.id})" class="p-2 rounded hover:bg-gray-700 text-blue-400 transition" title="Düzenle">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button onclick="deleteServer(${server.id})" class="p-2 rounded hover:bg-gray-700 text-red-400 transition" title="Sil">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </details>
                 `;
                 container.innerHTML += html;
-            }
+            });
         }
 
-		function renderServerRow(server) {
-		            let statusBadge = '';
-		       
-		            const maintenanceIcon = server.maintenanceMode ? 'fa-pause-circle text-yellow-500' : 'fa-wrench text-gray-500';
-		            
-		            let pingColor = 'text-gray-500';
-		            let pingText = '-';
+        // --- KUBERNETES ---
+        function fetchK8sData() {
+            fetch('/api/v1/k8s/pods')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('k8sCount').innerText = data.length;
+                    const tbody = document.getElementById('k8s-table-body');
+                    if(data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Pod bulunamadı.</td></tr>';
+                        return;
+                    }
+                    let html = '';
+                    data.forEach(p => {
+                        const colorClass = p.statusColor ? `text-${p.statusColor}` : 'text-gray-400';
+                        
+                        html += `
+                            <tr class="hover:bg-gray-700/50 transition border-b border-gray-700/50 last:border-0">
+                                <td class="p-4 font-bold ${colorClass}">
+                                    <i class="fa-solid fa-circle text-[8px] mr-2"></i>${p.phase}
+                                </td>
+                                <td class="p-4 font-medium text-white">${p.name}</td>
+                                <td class="p-4 text-purple-300 text-xs">${p.namespace}</td>
+                                <td class="p-4 text-gray-400 text-xs"><i class="fa-solid fa-server mr-1"></i> ${p.nodeName}</td>
+                                <td class="p-4 text-gray-500 font-mono text-xs">${p.hostIP || '-'}</td>
+                            </tr>`;
+                    });
+                    tbody.innerHTML = html;
+                });
+        }
 
-		            if (server.lastResponseTime === -1) {
-		                pingText = `<span class="text-blue-400 font-bold"><i class="fa-solid fa-shield-halved mr-1"></i>${i18n.udpService}</span>`;
-		            } else if (server.lastResponseTime > 0) {
-		                pingText = `<i class="fa-solid fa-stopwatch mr-1"></i> ${server.lastResponseTime} ms`;
-		                
-		                if (server.lastResponseTime < 500) {
-		                    pingColor = 'text-green-400';
-		                } else if (server.lastResponseTime < 1000) {
-		                    pingColor = 'text-yellow-400';
-		                } else {
-		                    pingColor = 'text-red-400 font-bold';
-		                }
-		            }
+        // --- DOCKER  ---
+        function fetchDockerData() {
+            fetch('/api/v1/docker')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('dockerCount').innerText = data.length;
+                    const tbody = document.getElementById('docker-table-body');
+                    if(data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Container bulunamadı.</td></tr>';
+                        return;
+                    }
+                    let html = '';
+                    data.forEach(c => {
+                        const isRunning = c.state && c.state.toLowerCase() === 'running';
+                        const badgeClass = isRunning ? 'bg-green-900/40 text-green-400 border-green-700' : 'bg-red-900/40 text-red-400 border-red-700';
+                        html += `
+                            <tr class="hover:bg-gray-700/50 transition border-b border-gray-700/50 last:border-0">
+                                <td class="p-4"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${badgeClass}">${c.state ? c.state.toUpperCase() : 'UNKNOWN'}</span></td>
+                                <td class="p-4 font-bold text-white">${c.name}</td>
+                                <td class="p-4 text-gray-400 font-mono text-xs">${c.image}</td>
+                                <td class="p-4 text-gray-500 font-mono text-xs">${c.containerId.substring(0, 12)}</td>
+                                <td class="p-4 text-gray-500 text-xs">${c.lastUpdated ? new Date(c.lastUpdated).toLocaleTimeString() : '-'}</td>
+                            </tr>`;
+                    });
+                    tbody.innerHTML = html;
+                });
+        }
 
-		        
-		            if (server.status === 'ONLINE') {
-		                statusBadge = `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-900/50 text-green-400 border border-green-800 w-24 justify-center"><span class="w-1.5 h-1.5 mr-2 bg-green-400 rounded-full animate-pulse"></span> ONLINE</span>`;
-		            } else if (server.status === 'OFFLINE') {
-		                statusBadge = `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-900/50 text-red-400 border border-red-800 w-24 justify-center"><span class="w-1.5 h-1.5 mr-2 bg-red-400 rounded-full"></span> OFFLINE</span>`;
-		            } else {
-		                statusBadge = `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-700 text-gray-300 w-24 justify-center">UNKNOWN</span>`;
-		            }
-
-		   
-		            return `
-		            <tr class="hover:bg-gray-700/50 transition cursor-pointer" onclick="openMonitorModal(${server.id})">
-		                
-		                <td class="p-4 w-32">${statusBadge}</td>
-		                
-		                <td class="p-4">
-		                    <div class="font-semibold text-white">${server.name}</div>
-		                    <div class="text-xs font-mono ${pingColor} mt-1 flex items-center">
-		                        ${pingText}
-		                    </div>
-		                </td>
-		                
-		                <td class="p-4 text-blue-300 font-mono text-xs">${server.ipAddress}</td>
-		                
-		                <td class="p-4 text-gray-400 text-xs hidden md:table-cell"><i class="fa-solid fa-location-dot mr-1"></i> ${server.location}</td>
-		                
-		                <td class="p-4 text-right space-x-3" onclick="event.stopPropagation()">
-		                    
-		                    <button onclick="toggleMaintenanceMode(${server.id}, ${server.maintenanceMode})" 
-		                            class="text-sm transition hover:text-white" 
-		                            title="${server.maintenanceMode ? 'Bakım Modunu Kapat' : 'Bakım Modunu Aç'}">
-		                        <i class="fa-solid ${maintenanceIcon}"></i>
-		                    </button>
-
-		                    <button onclick="openEditModal(${server.id})" class="text-gray-400 hover:text-yellow-400 transition" title="Düzenle">
-		                        <i class="fa-solid fa-pen"></i>
-		                    </button>
-		                    
-		                    <button onclick="deleteServer(${server.id})" class="text-gray-400 hover:text-red-400 transition" title="Sil">
-		                        <i class="fa-solid fa-trash"></i>
-		                    </button>
-		                </td>
-		            </tr>
-		            `;
-		        }
-
+        // --- CHART ---
         function openMonitorModal(serverId) {
             document.getElementById('monitorModal').classList.remove('hidden');
             const server = allServers.find(s => s.id === serverId);
-            if(server) document.getElementById('monitorServerName').innerText = server.name;
+            if(server) document.getElementById('monitorServerName').innerText = server.name + ' - Geçmiş';
 
             fetch(`/api/v1/servers/${serverId}/history`)
                 .then(res => res.json())
@@ -342,7 +423,6 @@
                     const labels = data.map(d => new Date(d.checkTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}));
                     const pingTimes = data.map(d => d.responseTime);
                     const pointColors = data.map(d => d.status === 'ONLINE' ? '#4ade80' : '#f87171');
-
                     drawChart(labels, pingTimes, pointColors);
                 });
         }
@@ -350,13 +430,12 @@
         function drawChart(labels, dataPoints, pointColors) {
             const ctx = document.getElementById('uptimeChart').getContext('2d');
             if (myChart) myChart.destroy();
-
             myChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: i18n.chartLabelResponseTime,
+                        label: 'Ping (ms)',
                         data: dataPoints,
                         borderColor: '#3b82f6',
                         backgroundColor: 'rgba(59, 130, 246, 0.1)',
@@ -372,59 +451,42 @@
                     maintainAspectRatio: false,
                     scales: {
                         y: { beginAtZero: true, grid: { color: '#374151' }, ticks: { color: '#9ca3af' } },
-                        x: { grid: { display: false }, ticks: { color: '#9ca3af', maxTicksLimit: 10 } }
+                        x: { display: false }
                     },
                     plugins: { legend: { display: false } }
                 }
             });
         }
 
-        function openSettingsModal() {
-            document.getElementById('settingsModal').classList.remove('hidden');
-            fetch('/api/v1/settings/discord_webhook_url')
-                .then(res => res.text())
-                .then(url => { document.getElementById('discordWebhook').value = url || ''; });
-        }
-        function closeSettingsModal() { document.getElementById('settingsModal').classList.add('hidden'); }
-        function saveSettings() {
-            const url = document.getElementById('discordWebhook').value;
-            fetch('/api/v1/settings', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ key: 'discord_webhook_url', value: url })
-            }).then(() => {
-                closeSettingsModal();
-                Swal.fire({icon: 'success', title: i18n.swalSettingsSavedTitle, timer: 1500, showConfirmButton: false, background: '#1f2937', color: '#fff'});
-            });
-        }
-
-        function closeModal() { document.getElementById('addServerModal').classList.add('hidden'); }
+        // --- CRUD ---
         function openNewModal() {
             isEditMode = false;
-            document.getElementById('modalTitle').innerText = i18n.modalNewTitle;
+            document.getElementById('modalTitle').innerText = 'Yeni Sunucu Ekle';
             document.getElementById('serverId').value = '';
             document.getElementById('serverName').value = '';
             document.getElementById('serverIp').value = '';
             document.getElementById('serverOs').value = '';
             document.getElementById('serverLocation').value = '';
             document.getElementById('serverCategory').value = '';
-            document.getElementById('serverCert').value = '';
             document.getElementById('addServerModal').classList.remove('hidden');
         }
+
         function openEditModal(id) {
             const server = allServers.find(s => s.id === id);
             if(!server) return;
             isEditMode = true;
-            document.getElementById('modalTitle').innerText = i18n.modalEditTitle;
+            document.getElementById('modalTitle').innerText = 'Sunucuyu Düzenle';
             document.getElementById('serverId').value = id;
             document.getElementById('serverName').value = server.name;
             document.getElementById('serverIp').value = server.ipAddress;
             document.getElementById('serverOs').value = server.operatingSystem;
             document.getElementById('serverLocation').value = server.location;
-            document.getElementById('serverCategory').value = server.category || i18n.categoryGeneral;
-            document.getElementById('serverCert').value = server.customCertificate || '';
+            document.getElementById('serverCategory').value = server.category;
             document.getElementById('addServerModal').classList.remove('hidden');
         }
+
+        function closeModal() { document.getElementById('addServerModal').classList.add('hidden'); }
+
         function saveServer() {
             const id = document.getElementById('serverId').value;
             const data = {
@@ -432,67 +494,71 @@
                 ipAddress: document.getElementById('serverIp').value,
                 operatingSystem: document.getElementById('serverOs').value,
                 location: document.getElementById('serverLocation').value,
-                category: document.getElementById('serverCategory').value,
-                customCertificate: document.getElementById('serverCert').value
+                category: document.getElementById('serverCategory').value
             };
-            if(!data.name || !data.ipAddress) return Swal.fire({icon: 'warning', title: i18n.swalMissingInfoTitle, text: i18n.swalMissingInfoText, background: '#1f2937', color: '#fff'});
-
             const url = isEditMode && id ? '/api/v1/servers/' + id : '/api/v1/servers';
             const method = isEditMode && id ? 'PUT' : 'POST';
 
-            fetch(url, { method: method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) })
-            .then(res => {
+            fetch(url, {
+                method: method,
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            }).then(res => {
                 if(res.ok) {
                     closeModal();
-                    fetchServers(); 
-                    Swal.fire({icon: 'success', title: i18n.swalServerSavedTitle, timer: 1000, showConfirmButton: false, background: '#1f2937', color: '#fff'});
+                    fetchServers();
+                    Swal.fire({icon: 'success', title: 'Kaydedildi', timer: 1500, showConfirmButton: false, background: '#1f2937', color: '#fff'});
                 }
             });
         }
+
         function deleteServer(id) {
-            Swal.fire({title: i18n.swalDeleteTitle, icon: 'warning', showCancelButton: true, confirmButtonText: i18n.swalDeleteConfirm, background: '#1f2937', color: '#fff'}).then(r => {
-                if(r.isConfirmed) fetch('/api/v1/servers/' + id, {method: 'DELETE'}).then(() => fetchServers());
+            Swal.fire({
+                title: 'Emin misiniz?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Evet, Sil',
+                background: '#1f2937', color: '#fff'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('/api/v1/servers/' + id, {method: 'DELETE'}).then(() => {
+                        fetchServers();
+                        Swal.fire({icon: 'success', title: 'Silindi', timer: 1000, showConfirmButton: false, background: '#1f2937', color: '#fff'});
+                    });
+                }
             });
         }
 
-        window.onclick = function(e) {
-            if(e.target == document.getElementById('addServerModal')) closeModal();
-            if(e.target == document.getElementById('settingsModal')) closeSettingsModal();
-            if(e.target == document.getElementById('monitorModal')) document.getElementById('monitorModal').classList.add('hidden');
+        function toggleMaintenanceMode(id, currentStatus) {
+            const server = allServers.find(s => s.id === id);
+            if (!server) return;
+            const updatedData = { ...server, maintenanceMode: !currentStatus };
+            fetch('/api/v1/servers/' + id, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(updatedData)
+            }).then(res => { if(res.ok) fetchServers(false); });
         }
-		function toggleMaintenanceMode(id, currentStatus) {
-		    const newStatus = !currentStatus;
-		    const server = allServers.find(s => s.id === id);
 
+        function openSettingsModal() {
+            document.getElementById('settingsModal').classList.remove('hidden');
+            fetch('/api/v1/settings/discord_webhook_url')
+                .then(res => res.text())
+                .then(url => document.getElementById('discordWebhook').value = url || '');
+        }
 
-		    const data = {
-		        name: server.name,
-		        ipAddress: server.ipAddress,
-		        operatingSystem: server.operatingSystem,
-		        location: server.location,
-		        category: server.category,
-		        customCertificate: server.customCertificate,
-		        maintenanceMode: newStatus
-		    };
-		    
-		    fetch('/api/v1/servers/' + id, {
-		        method: 'PUT',
-		        headers: { 'Content-Type': 'application/json' },
-		        body: JSON.stringify(data)
-		    })
-		    .then(res => {
-		        if (res.ok) {
-		            fetchServers();
-		            Swal.fire({
-		                icon: 'success',
-		                title: newStatus ? 'Bakım Modu Açıldı' : 'Bakım Modu Kapatıldı',
-		                timer: 1000, showConfirmButton: false, background: '#1f2937', color: '#fff'
-		            });
-		        }
-		    })
-		    .catch(err => {
-		        Swal.fire({icon: 'error', title: 'Hata', text: 'Bakım modu değiştirilemedi.'});
-		    });
-		}
+        function saveSettings() {
+            const url = document.getElementById('discordWebhook').value;
+            fetch('/api/v1/settings', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ key: 'discord_webhook_url', value: url })
+            }).then(() => {
+                document.getElementById('settingsModal').classList.add('hidden');
+                Swal.fire({icon: 'success', title: 'Ayarlar Kaydedildi', timer: 1500, showConfirmButton: false, background: '#1f2937', color: '#fff'});
+            });
+        }
     </script>
 </body>
+</html>

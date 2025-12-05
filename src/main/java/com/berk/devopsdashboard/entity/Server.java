@@ -2,9 +2,12 @@ package com.berk.devopsdashboard.entity;
 
 import com.berk.devopsdashboard.entity.enums.ServerStatus;
 import jakarta.persistence.*;
-import lombok.*;
-
-import java.util.List;
+import lombok.Builder;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "servers")
@@ -13,36 +16,52 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Server extends BaseEntity {
+public class Server {
 
-    @Column(nullable = false, unique = true)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     private String name;
-
-    @Column(nullable = false)
+    
     private String ipAddress;
 
     private String operatingSystem;
-
+    
     private String location;
+    
+    private String category;
 
     @Enumerated(EnumType.STRING)
     private ServerStatus status;
+    
+    private Double cpuUsage;
+    private Double ramUsage;
+    private String totalRam;
 
-    @Column(columnDefinition = "TEXT") 
+    private Integer lastResponseTime;
+
+    @Column(length = 2000)
     private String customCertificate;
 
-    @OneToMany(mappedBy = "server", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Deployment> deployments;
+    @Builder.Default
+    private Boolean maintenanceMode = false;
+
+    private LocalDateTime createdAt;
     
-    @Column(nullable = false, columnDefinition = "VARCHAR(255) DEFAULT 'Genel'")
-    private String category;
-    
-    @Column(columnDefinition = "integer default 0")
-    private int lastResponseTime;
-    
-    @OneToMany(mappedBy = "server", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ServerHistory> historyLogs;
-    
-    @Column(columnDefinition = "boolean default false")
-    private boolean maintenanceMode;
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+    public boolean isMaintenanceMode() {
+        return Boolean.TRUE.equals(this.maintenanceMode);
+    }
 }

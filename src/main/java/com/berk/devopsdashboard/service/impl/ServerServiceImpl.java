@@ -6,8 +6,11 @@ import com.berk.devopsdashboard.entity.Server;
 import com.berk.devopsdashboard.entity.enums.ServerStatus;
 import com.berk.devopsdashboard.repository.ServerRepository;
 import com.berk.devopsdashboard.service.ServerService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.net.ssl.*;
 import java.io.ByteArrayInputStream;
@@ -18,14 +21,25 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import com.berk.devopsdashboard.repository.ServerHistoryRepository; 
+import com.berk.devopsdashboard.repository.DeploymentRepository; 
+import com.berk.devopsdashboard.repository.DockerContainerRepository; 
+import com.berk.devopsdashboard.repository.KubernetesPodRepository; 
 
 @Service
 @RequiredArgsConstructor
 public class ServerServiceImpl implements ServerService {
 
     private final ServerRepository serverRepository;
+    private final ObjectMapper objectMapper;
+    private final ServerHistoryRepository serverHistoryRepository; 
+    private final DeploymentRepository deploymentRepository; 
+    private final DockerContainerRepository dockerContainerRepository; 
+    private final KubernetesPodRepository kubernetesPodRepository; 
 
     @Override
     public ServerResponse createServer(ServerRequest request) {
@@ -34,7 +48,6 @@ public class ServerServiceImpl implements ServerService {
                 .ipAddress(request.getIpAddress())
                 .operatingSystem(request.getOperatingSystem())
                 .location(request.getLocation())
-   
                 .category(request.getCategory() == null || request.getCategory().isEmpty() ? "Genel" : request.getCategory())
                 .customCertificate(request.getCustomCertificate())
                 .status(ServerStatus.UNKNOWN)
@@ -66,8 +79,15 @@ public class ServerServiceImpl implements ServerService {
     }
 
     @Override
+    @Transactional
     public void deleteServer(Long id) {
         if (!serverRepository.existsById(id)) throw new RuntimeException("Sunucu yok");
+
+        kubernetesPodRepository.deleteByServerId(id); 
+        dockerContainerRepository.deleteByServerId(id); 
+        deploymentRepository.deleteByServerId(id); 
+        serverHistoryRepository.deleteByServerId(id); 
+        
         serverRepository.deleteById(id);
     }
 
@@ -76,7 +96,6 @@ public class ServerServiceImpl implements ServerService {
         return mapToResponse(serverRepository.findById(id).orElseThrow());
     }
     
-
     private ServerResponse mapToResponse(Server server) {
         return ServerResponse.builder()
                 .id(server.getId())
@@ -85,17 +104,25 @@ public class ServerServiceImpl implements ServerService {
                 .operatingSystem(server.getOperatingSystem())
                 .location(server.getLocation())
                 .category(server.getCategory()) 
-                .status(server.getStatus().name())
+                .status(server.getStatus()) 
                 .customCertificate(server.getCustomCertificate()) 
                 .lastResponseTime(server.getLastResponseTime())
                 .maintenanceMode(server.isMaintenanceMode())
+                .cpuUsage(server.getCpuUsage())
+                .ramUsage(server.getRamUsage())
+                .totalRam(server.getTotalRam())
+                
+                .createdAt(server.getCreatedAt())
+                .updatedAt(server.getUpdatedAt())
                 .build();
     }
     
-
     @Override
     public ServerStatus checkServerStatus(Server server) {
-
+        if (server.getUpdatedAt() != null && 
+            server.getUpdatedAt().isAfter(LocalDateTime.now().minusSeconds(45))) {
+            return ServerStatus.ONLINE;
+        }
         long startTime = System.currentTimeMillis();
 
         String rawAddress = server.getIpAddress();
@@ -104,9 +131,9 @@ public class ServerServiceImpl implements ServerService {
         
 
         if (address.toLowerCase().startsWith("udp://")) {
-        	ServerStatus status = checkUdpStatus(address);
-        	server.setLastResponseTime(-1);
-        	return status;
+            ServerStatus status = checkUdpStatus(address);
+            server.setLastResponseTime(-1);
+            return status;
         }
 
         String customCert = server.getCustomCertificate();
@@ -155,7 +182,7 @@ public class ServerServiceImpl implements ServerService {
             }
 
             connection.setRequestProperty("User-Agent", "Mozilla/5.0 (compatible; DevOpsDashboard/1.0)");
-            connection.setInstanceFollowRedirects(false); // Redirect Loop için kapalı
+            connection.setInstanceFollowRedirects(false); 
             connection.setRequestMethod("GET");
             connection.setConnectTimeout(5000);
             connection.setReadTimeout(5000);
@@ -164,12 +191,17 @@ public class ServerServiceImpl implements ServerService {
             
             long endTime = System.currentTimeMillis();
             int duration = (int) (endTime - startTime);
-           
+            
             server.setLastResponseTime(duration);
 
             System.out.println("Kontrol: " + urlString + " | Kod: " + code + " | Süre: " + duration + "ms");
             
             if (code >= 200 && code < 500) {
+                String category = server.getCategory();
+                if (category != null && (category.equalsIgnoreCase("WLED") || category.equalsIgnoreCase("IoT"))) {
+                    System.out.println(">>> WLED/IoT Cihazı Tespit Edildi: " + server.getName() + ". Metrikler çekiliyor...");
+                    fetchWledMetrics(server, urlString);
+                }
                 return ServerStatus.ONLINE;
             }
 
@@ -194,6 +226,55 @@ public class ServerServiceImpl implements ServerService {
         return ServerStatus.OFFLINE;
     }
 
+    private void fetchWledMetrics(Server server, String baseUrl) {
+        try {
+            String cleanBaseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+            String apiUrl = cleanBaseUrl + "/json/info";
+            
+            System.out.println(">>> WLED API İsteği: " + apiUrl);
+
+            URL url = new URL(apiUrl);
+            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+            conn.setConnectTimeout(3000);
+            conn.setReadTimeout(3000);
+            conn.setRequestMethod("GET");
+            
+            int responseCode = conn.getResponseCode();
+            System.out.println(">>> WLED API Yanıt Kodu: " + responseCode);
+
+            if (responseCode == 200) {
+                JsonNode root = objectMapper.readTree(conn.getInputStream());
+                
+                if (root.has("freeheap")) {
+                    long freeHeap = root.get("freeheap").asLong();
+                    double estimatedTotalHeap = 360 * 1024.0;
+                    double usedRam = estimatedTotalHeap - freeHeap;
+                    double ramPercent = (usedRam / estimatedTotalHeap) * 100.0;
+                    
+                    if (ramPercent < 0) ramPercent = 0;
+                    if (ramPercent > 100) ramPercent = 100;
+
+                    server.setRamUsage(Math.round(ramPercent * 100.0) / 100.0);
+                    server.setTotalRam((freeHeap / 1024) + "KB Free");
+                    System.out.println(">>> WLED RAM Güncellendi: %" + ramPercent);
+                } else {
+                    System.out.println(">>> WLED JSON içinde 'freeheap' alanı bulunamadı.");
+                }
+
+                if (root.has("wifi") && root.get("wifi").has("signal")) {
+                    double signalStrength = root.get("wifi").get("signal").asDouble();
+                    server.setCpuUsage(signalStrength); 
+                    System.out.println(">>> WLED WiFi Sinyali (CPU yerine): %" + signalStrength);
+                }
+            } else {
+                System.out.println(">>> WLED API Hatası: " + responseCode);
+            }
+        } catch (Exception e) {
+            System.out.println(">>> WLED Metrik Hatası (" + server.getName() + "): " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
     private boolean isLocalNetwork(String host) {
 
         if (host.equals("localhost") || host.equals("127.0.0.1")) return true;
@@ -206,7 +287,7 @@ public class ServerServiceImpl implements ServerService {
         
 
         if (host.startsWith("172.") && host.length() > 4) {
-         
+          
              return true; 
         }
         
@@ -256,7 +337,7 @@ public class ServerServiceImpl implements ServerService {
             URL url = new URL(urlString);
             java.net.HttpURLConnection connection = (java.net.HttpURLConnection) url.openConnection();
             
-            trustAllCertificates(connection); // SSL Bypass
+            trustAllCertificates(connection);
             connection.setInstanceFollowRedirects(false);
             connection.setRequestMethod("GET");
             connection.setConnectTimeout(3000);
@@ -334,5 +415,5 @@ public class ServerServiceImpl implements ServerService {
             System.out.println("UDP Genel Hata: " + e.getMessage());
             return ServerStatus.OFFLINE;
         }
-        }
+    }
 }

@@ -79,11 +79,12 @@
         <scope>runtime</scope>
     </dependency>
 
-    <dependency>
-        <groupId>org.projectlombok</groupId>
-        <artifactId>lombok</artifactId>
-        <optional>true</optional>
-    </dependency>
+<dependency>
+		<groupId>org.projectlombok</groupId>
+		<artifactId>lombok</artifactId>
+		<version>1.18.42</version>
+		<scope>provided</scope>
+	</dependency>
     <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-actuator</artifactId> </dependency>
@@ -91,6 +92,31 @@
     <groupId>com.h2database</groupId>
     <artifactId>h2</artifactId>
     <scope>runtime</scope>
+</dependency>
+<dependency>
+        <groupId>com.github.docker-java</groupId>
+        <artifactId>docker-java</artifactId>
+        <version>3.3.4</version>
+    </dependency>
+<dependency>
+    <groupId>com.github.docker-java</groupId>
+    <artifactId>docker-java-transport-zerodep</artifactId>
+    <version>3.3.4</version>
+</dependency>
+    <dependency>
+        <groupId>io.fabric8</groupId>
+        <artifactId>kubernetes-client</artifactId>
+        <version>6.9.2</version>
+    </dependency>
+    <dependency>
+    <groupId>io.kubernetes</groupId>
+    <artifactId>client-java</artifactId>
+    <version>18.0.0</version> 
+</dependency>
+<dependency>
+    <groupId>com.github.oshi</groupId>
+    <artifactId>oshi-core</artifactId>
+    <version>6.4.10</version>
 </dependency>
 </dependencies>
 	
@@ -101,6 +127,19 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+			<plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-compiler-plugin</artifactId>
+			<configuration>
+				<annotationProcessorPaths>
+					<path>
+						<groupId>org.projectlombok</groupId>
+						<artifactId>lombok</artifactId>
+						<version>1.18.42</version>
+					</path>
+				</annotationProcessorPaths>
+			</configuration>
+		</plugin>
 		</plugins>
 	</build>
 
