@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     container_name: devops-db
@@ -20,9 +18,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
   devops-dashboard:
     container_name: devops-dashboard
-    build: . 
+    platform: linux/amd64 
+    build: 
+      context: .
+      dockerfile: Dockerfile
     image: berk/devops-dashboard:v1.0
     ports:
       - "8080:8080"
@@ -35,13 +37,13 @@ services:
     volumes:
       - ./dashboard-data:/app/data
       - /var/run/docker.sock:/var/run/docker.sock
-      
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - devops-network
     restart: unless-stopped
+
 networks:
   devops-network:
     driver: bridge

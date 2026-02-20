@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 import com.berk.devopsdashboard.entity.ServerHistory;
-import com.berk.devopsdashboard.repository.ServerHistoryRepository; 
+import com.berk.devopsdashboard.repository.ServerHistoryRepository;
 import java.time.LocalDateTime;
 
 @Component
@@ -51,13 +51,32 @@ public class ServerStatusMonitor {
                     log.info("DURUM DEĞİŞTİ: {} -> {} (Eski: {})", server.getName(), newStatus, oldStatus);
 
                     if (newStatus == ServerStatus.OFFLINE && oldStatus != ServerStatus.UNKNOWN) {
-                        
+
                         if (!server.isMaintenanceMode()) {
                             log.warn("🚨 ALARM GÖNDERİLİYOR: {}", server.getName());
                             notificationService.sendOfflineAlert(server);
                         } else {
                             log.warn("Sunucu bakıma alındığı için bildirim atılmadı: {}", server.getName());
                         }
+                    }
+                }
+
+                // Resource Usage Checks
+                if (server.getStatus() == ServerStatus.ONLINE && !server.isMaintenanceMode()) {
+                    if (server.getCpuUsageThreshold() != null && server.getCpuUsageThreshold() > 0
+                            && server.getCpuUsage() != null && server.getCpuUsage() > server.getCpuUsageThreshold()) {
+                        log.warn("High CPU Usage Alert: {} ({} > {})", server.getName(), server.getCpuUsage(),
+                                server.getCpuUsageThreshold());
+                        notificationService.sendResourceAlert(server, "CPU", server.getCpuUsage(),
+                                server.getCpuUsageThreshold());
+                    }
+
+                    if (server.getRamUsageThreshold() != null && server.getRamUsageThreshold() > 0
+                            && server.getRamUsage() != null && server.getRamUsage() > server.getRamUsageThreshold()) {
+                        log.warn("High RAM Usage Alert: {} ({} > {})", server.getName(), server.getRamUsage(),
+                                server.getRamUsageThreshold());
+                        notificationService.sendResourceAlert(server, "RAM", server.getRamUsage(),
+                                server.getRamUsageThreshold());
                     }
                 }
 

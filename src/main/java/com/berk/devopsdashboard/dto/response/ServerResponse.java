@@ -19,6 +19,10 @@ public class ServerResponse {
     private Double cpuUsage;
     private Double ramUsage;
     private String totalRam;
+
+    private Double cpuUsageThreshold;
+    private Double ramUsageThreshold;
+
     private String customCertificate;
     private Boolean maintenanceMode;
     private LocalDateTime createdAt;

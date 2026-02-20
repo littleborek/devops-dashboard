@@ -23,21 +23,27 @@ public class Server {
     private Long id;
 
     private String name;
-    
+
     private String ipAddress;
 
     private String operatingSystem;
-    
+
     private String location;
-    
+
     private String category;
 
     @Enumerated(EnumType.STRING)
     private ServerStatus status;
-    
+
     private Double cpuUsage;
     private Double ramUsage;
     private String totalRam;
+
+    @Column(name = "cpu_usage_threshold")
+    private Double cpuUsageThreshold;
+
+    @Column(name = "ram_usage_threshold")
+    private Double ramUsageThreshold;
 
     private Integer lastResponseTime;
 
@@ -48,7 +54,7 @@ public class Server {
     private Boolean maintenanceMode = false;
 
     private LocalDateTime createdAt;
-    
+
     private LocalDateTime updatedAt;
 
     @PrePersist
@@ -61,6 +67,7 @@ public class Server {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
     public boolean isMaintenanceMode() {
         return Boolean.TRUE.equals(this.maintenanceMode);
     }

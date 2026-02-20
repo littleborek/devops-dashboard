@@ -1,7 +1,5 @@
 package com.berk.devopsdashboard.controller;
 
-
-
 import com.berk.devopsdashboard.dto.request.ServerRequest;
 import com.berk.devopsdashboard.dto.response.ServerResponse;
 import com.berk.devopsdashboard.service.ServerService;
@@ -28,27 +26,37 @@ public class ServerController {
         return new ResponseEntity<>(serverService.createServer(request), HttpStatus.CREATED);
     }
 
-
     @GetMapping
     public ResponseEntity<List<ServerResponse>> getAllServers() {
         return ResponseEntity.ok(serverService.getAllServers());
     }
-    
-
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteServer(@PathVariable Long id) {
         serverService.deleteServer(id);
-        return ResponseEntity.noContent().build(); 
+        return ResponseEntity.noContent().build();
     }
-    
+
     @PutMapping("/{id}")
-    public ResponseEntity<ServerResponse> updateServer(@PathVariable Long id, @Valid @RequestBody ServerRequest request) {
+    public ResponseEntity<ServerResponse> updateServer(@PathVariable Long id,
+            @Valid @RequestBody ServerRequest request) {
         return ResponseEntity.ok(serverService.updateServer(id, request));
     }
-    
+
+    private final com.berk.devopsdashboard.service.LogService logService;
+
     @GetMapping("/{id}/history")
     public ResponseEntity<List<ServerHistory>> getServerHistory(@PathVariable Long id) {
         return ResponseEntity.ok(historyRepository.findTop50ByServerIdOrderByCheckTimeDesc(id));
+    }
+
+    @GetMapping("/{id}/containers")
+    public ResponseEntity<List<com.github.dockerjava.api.model.Container>> getContainers(@PathVariable Long id) {
+        return ResponseEntity.ok(logService.getRunningContainers(id));
+    }
+
+    @GetMapping("/{id}/logs")
+    public ResponseEntity<String> getContainerLogs(@PathVariable Long id, @RequestParam String containerId) {
+        return ResponseEntity.ok(logService.getLogs(id, containerId));
     }
 }
