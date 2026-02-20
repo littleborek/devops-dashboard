@@ -1,0 +1,98 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "devops-dashboard",
+    "title": "DevOps Dashboard",
+    "timezone": "browser",
+    "schemaVersion": 30,
+    "version": 1,
+    "refresh": "15s",
+    "panels": [
+      {
+        "type": "graph",
+        "title": "CPU Usage",
+        "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "devops_server_cpu_usage",
+            "legendFormat": "{{name}} ({{ip}})",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "graph",
+        "title": "RAM Usage",
+        "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "devops_server_ram_usage",
+            "legendFormat": "{{name}} ({{ip}})",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "graph",
+        "title": "Disk Usage",
+        "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "devops_server_disk_usage",
+            "legendFormat": "{{name}} ({{ip}})",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "graph",
+        "title": "Load Average",
+        "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "devops_server_load_average",
+            "legendFormat": "{{name}} ({{ip}})",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "graph",
+        "title": "Container Count",
+        "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "devops_server_container_count",
+            "legendFormat": "{{name}} ({{ip}})",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "graph",
+        "title": "Pod Count",
+        "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "devops_server_pod_count",
+            "legendFormat": "{{name}} ({{ip}})",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "stat",
+        "title": "Server Status",
+        "gridPos": { "x": 0, "y": 24, "w": 24, "h": 4 },
+        "targets": [
+          {
+            "expr": "devops_server_status",
+            "legendFormat": "{{name}} ({{ip}})",
+            "refId": "A"
+          }
+        ]
+      }
+    ]
+  },
+  "overwrite": true
+}

@@ -27,7 +27,7 @@ services:
       dockerfile: Dockerfile
     image: berk/devops-dashboard:v1.0
     ports:
-      - "8080:8080"
+      - "15000:15000"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/devops_db
       - SPRING_DATASOURCE_USERNAME=postgres
