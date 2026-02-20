@@ -98,3 +98,23 @@ DevOps Dashboard, sunucularınızı, Docker konteynerlerinizi ve Kubernetes pod'
 - [ ] **Log Tail Viewer:** View remote server logs directly from the dashboard.
 - [ ] **Public Status Page:** A read‑only dashboard for sharing system status.
 - [ ] **Mobile Responsive UI:** Improved experience for tablets and phones.
+- [ ] 
+
+
+<img width="1469" height="839" alt="1" src="https://github.com/user-attachments/assets/8cbb4719-7f56-43f9-ac53-8b6415a3393c" />
+
+<img width="2940" height="4248" alt="2" src="https://github.com/user-attachments/assets/2ac5d4d2-4192-4f60-947f-4402bd115d3d" />
+
+<img width="1467" height="803" alt="3" src="https://github.com/user-attachments/assets/0a1b658d-c3f0-45d4-841d-9c99cdf732ba" />
+
+
+<img width="673" height="648" alt="4" src="https://github.com/user-attachments/assets/8fcee8e2-0148-4ff9-9a80-51885389fbe7" />
+
+<img width="513" height="577" alt="5" src="https://github.com/user-attachments/assets/5233c015-8315-41c7-9117-e1ed426aeef9" />
+
+
+
+
+
+
+
