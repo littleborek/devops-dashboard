@@ -1,65 +1,100 @@
-DevOps Dashboard 🚀
+# 🚀 DevOps Dashboard
 
-A comprehensive, full-stack monitoring and management solution built with Spring Boot, designed to provide frictionless, unified observability across traditional servers, Docker containers, Kubernetes clusters, and IoT devices.
+[English](#english) | [Türkçe](#türkçe)
 
-This project goes beyond simple status checks by integrating deep system metrics and offering a unique "Agentless" monitoring strategy for frictionless enterprise adoption.
+---
 
-Key Features
+## English
 
-Hybrid Monitoring: Unified visibility for traditional servers, Docker, Kubernetes, and IoT (WLED/ESP32).
+### 🎯 What is it?
+DevOps Dashboard is a simple and powerful tool to monitor your servers, Docker containers, and Kubernetes pods from a single screen. It helps you track uptime, system resources (CPU/RAM/Disk), and alerts you via Discord when something goes wrong.
 
-Agentless Strategy: Monitors remote Docker installations via direct TCP connection (No need to install Java on target machines).
+### 👤 Who is it for?
+- Developers and System Admins who manage multiple servers.
+- Home lab enthusiasts (monitoring local PCs or IoT devices).
+- Teams who want real-time notifications on server health.
 
-Auto-Discovery: Simplifies multi-cloud management through a Project/Token-based architecture.
+### ✨ Key Features
+- **Real-time Monitoring:** Sees server status and resource usage instantly via SSE (Server-Sent Events).
+- **Comprehensive Metrics:** CPU, RAM, **Disk Usage**, and **Load Average** tracking.
+- **15s High-Frequency Polling:** Near real-time data updates for critical systems.
+- **Grafana & Prometheus Ready:** Built-in metrics exporter at `/actuator/prometheus` for professional visualization.
+- **One-Liner Agent Setup:** Install or **Uninstall** the lightweight Linux agent with a single command.
+- **Docker & K8s support:** Automatically discover and monitor your containers and pods.
+- **Discord Alerts:** Sends automatic notifications to your Discord channel on status changes or high resource usage.
+- **Maintenance Mode:** Stop alerts temporarily when you are working on a server.
+- **SSL Bypass:** Easily monitor servers with self-signed certificates.
 
-Deep Metrics: Tracks CPU usage, RAM usage, and application-specific metrics (e.g., WiFi signal strength for WLED).
+### 🛠️ How to Use?
+1. **Run the App:** Start the project using Maven (`./mvnw spring-boot:run`).
+2. **Access:** The app runs on port **15000** by default.
+3. **Login:** Use the default credentials:
+   - **Username:** `admin`
+   - **Password:** `admin`
+4. **Add Agent:** Click "Agent Setup" on the dashboard, copy the command, and run it on your remote server (using `sudo` for full access).
+5. **Grafana:** Connect your Prometheus to `http://<master-ip>:15000/actuator/prometheus` and enjoy professional dashboards.
 
-Real-time Status: Provides live status updates and historical data visualization via Chart.js.
+### 🔐 Security Updates
+- The **DELETE `/api/v1/servers/{id}`** endpoint now requires authentication. Only logged‑in users (default admin) can delete a server.
+- Spring Security has been tightened:
+  - CSRF protection disabled for API calls.
+  - HTTP Basic authentication enabled (`admin:admin`).
+  - Method‑level security (`@PreAuthorize`) added to protect delete operations.
+- When calling the delete endpoint from a script or curl, include the credentials, e.g:
+  ```bash
+  curl -u admin:admin -X DELETE http://localhost:15000/api/v1/servers/9
+  ```
+- Related data (Docker containers, Kubernetes pods, deployments, server history) is now removed safely using explicit JPQL delete queries to avoid foreign‑key violations.
 
-Management Console: Supports CRUD operations for servers and manages related deployments.
+---
 
-Architecture & Technology Stack
+## Türkçe
 
-The application is built around a modern Spring Boot ecosystem, leveraging microservices principles for data collection and a clean separation between monitoring strategies.
+### 🎯 Nedir?
+DevOps Dashboard, sunucularınızı, Docker konteynerlerinizi ve Kubernetes pod'larınızı tek bir ekrandan izlemenizi sağlayan basit ve güçlü bir araçtır. Sunucu sağlığını, kaynak kullanımını (CPU/RAM/Disk) takip eder ve bir sorun olduğunda Discord üzerinden sizi uyarır.
 
-Layer
+### 👤 Kimin İçin?
+- Birden fazla sunucuyu yöneten geliştiriciler ve sistem yöneticileri.
+- Kendi ev ağını yönetenler (PC'ler veya IoT cihazlarını izlemek için).
+- Sunucu durumları hakkında anlık bildirim almak isteyen ekipler.
 
-Technology / Component
+### ✨ Önemli Özellikler
+- **Anlık İzleme:** SSE (Server-Sent Events) ile sayfa yenilemeden sunucu durumlarını görürsünüz.
+- **Genişletilmiş Metrikler:** CPU, RAM, **Disk Doluluğu** ve **Yük Ortalaması (Load Avg)** takibi.
+- **15 Saniyelik Hızlı Polling:** Kritik sistemler için saniyeler içinde güncellenen veri akışı.
+- **Grafana & Prometheus Entegrasyonu:** `/actuator/prometheus` üzerinden profesyonel görselleştirme desteği.
+- **Tek Satır Ajan Yönetimi:** Linux ajanını tek komutla kurun veya **kaldırın (Uninstall)**.
+- **Docker & K8s Desteği:** Konteyner ve pod'larınızı otomatik olarak tanır ve izler.
+- **Discord Bildirimleri:** Durum değişikliklerinde veya yüksek kaynak kullanımında Discord'a anlık mesaj gönderir.
+- **Bakım Modu:** Sunucu üzerinde çalışma yaparken bildirimleri geçici olarak durdurun.
+- **SSL Atlatma:** Kendi sertifikası (self-signed) olan sunucuları kolayca izleyin.
 
-Purpose
+### 🛠️ Nasıl Kullanılır?
+1. **Çalıştır:** Projeyi Maven ile başlatın (`./mvnw spring-boot:run`).
+2. **Erişim:** Uygulama varsayılan olarak **15000** portunda çalışır.
+3. **Giriş Yap:** Varsayılan giriş bilgileri:
+   - **Kullanıcı Adı:** `admin`
+   - **Şifre:** `admin`
+4. **Ajan Kurulumu:** Paneldeki "Ajan Kurulumu" butonuna basın, kopyalayın ve uzak sunucunuzda çalıştırın.
+5. **Grafana:** Prometheus veri kaynağı olarak `http://<sunucu-ip>:15000/actuator/prometheus` adresini ekleyin.
 
-Backend (Core)
+### 🔐 Güvenlik Güncellemeleri
+- **DELETE `/api/v1/servers/{id}`** endpointi artık kimlik doğrulama gerektiriyor. Sadece oturum açmış kullanıcılar (varsayılan admin) sunucu silebilir.
+- Spring Security ayarları güncellendi:
+  - API istekleri için CSRF koruması devre dışı bırakıldı.
+  - HTTP Basic authentication etkinleştirildi (`admin:admin`).
+  - Metod‑seviyesi güvenlik (`@PreAuthorize`) eklenerek silme işlemleri korundu.
+- Silme isteği bir betikten ya da curl ile yapılırken kimlik bilgileri eklenmelidir, örnek:
+  ```bash
+  curl -u admin:admin -X DELETE http://localhost:15000/api/v1/servers/9
+  ```
+- Sunucu silinirken ilişkili Docker container, Kubernetes pod, deployment ve server‑history kayıtları JPQL delete sorguları ile güvenli bir şekilde temizleniyor.
 
-Spring Boot 3, Java 21, Maven
+---
 
-REST API, Scheduler, Transaction Management
-
-Data Persistence
-
-PostgreSQL, Spring Data JPA
-
-Reliable and scalable data storage
-
-Orchestration
-
-docker-java (Zerodep), Kubernetes Java Client
-
-Communication with Docker Daemon and K8s API
-
-Metrics
-
-OSHI (System Metrics), Custom HTTP/JSON
-
-Collecting CPU/RAM/IoT data from native OS
-
-Frontend
-
-Thymeleaf, Tailwind CSS, Chart.js, SweetAlert2
-
-Responsive UI, data visualization, and interaction
-
-Agentless/Cloud
-
-Custom TCP/IP polling logic
-
-Monitoring external services without requiring a local Java agent
+## 🗺️ Roadmap / Gelecek Planları
+- [x] **Grafana Exporter Support:** Industry standard visualization.
+- [ ] **HTTP Endpoint Monitoring:** Monitor serverless functions (Lambda, Vercel) via HTTP status checks.
+- [ ] **Log Tail Viewer:** View remote server logs directly from the dashboard.
+- [ ] **Public Status Page:** A read‑only dashboard for sharing system status.
+- [ ] **Mobile Responsive UI:** Improved experience for tablets and phones.

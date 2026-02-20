@@ -25,6 +25,7 @@ public class ServerResponse {
 
     private String customCertificate;
     private Boolean maintenanceMode;
+    private Boolean skipSslCheck;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

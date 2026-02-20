@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 15000
 
 spring:
   application:
@@ -27,3 +27,14 @@ spring:
 
 discord:
   webhook-url: ${DISCORD_WEBHOOK_URL:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,info
+  endpoint:
+    prometheus:
+      enabled: true
+    health:
+      show-details: always

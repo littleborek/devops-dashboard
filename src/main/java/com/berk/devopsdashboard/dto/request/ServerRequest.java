@@ -22,6 +22,7 @@ public class ServerRequest {
     private String category;
 
     private boolean maintenanceMode;
+    private boolean skipSslCheck;
 
     private Double cpuUsageThreshold;
     private Double ramUsageThreshold;

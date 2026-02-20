@@ -52,6 +52,7 @@ public class ServerServiceImpl implements ServerService {
                         : request.getCategory())
                 .customCertificate(request.getCustomCertificate())
                 .status(ServerStatus.UNKNOWN)
+                .skipSslCheck(request.isSkipSslCheck())
                 .build();
 
         return mapToResponse(serverRepository.save(server));
@@ -72,6 +73,7 @@ public class ServerServiceImpl implements ServerService {
         server.setMaintenanceMode(request.isMaintenanceMode());
         server.setCpuUsageThreshold(request.getCpuUsageThreshold());
         server.setRamUsageThreshold(request.getRamUsageThreshold());
+        server.setSkipSslCheck(request.isSkipSslCheck());
 
         return mapToResponse(serverRepository.save(server));
     }
@@ -117,7 +119,7 @@ public class ServerServiceImpl implements ServerService {
                 .totalRam(server.getTotalRam())
                 .cpuUsageThreshold(server.getCpuUsageThreshold())
                 .ramUsageThreshold(server.getRamUsageThreshold())
-
+                .skipSslCheck(server.getSkipSslCheck())
                 .createdAt(server.getCreatedAt())
                 .updatedAt(server.getUpdatedAt())
                 .build();
@@ -174,12 +176,10 @@ public class ServerServiceImpl implements ServerService {
                 }
 
                 else {
-                    if (isLocalNetwork(url.getHost())) {
-
+                    if (server.getSkipSslCheck() != null && server.getSkipSslCheck()) {
                         trustAllCertificates(httpsConnection);
-
-                    } else {
-
+                    } else if (isLocalNetwork(url.getHost())) {
+                        trustAllCertificates(httpsConnection);
                     }
                 }
             }

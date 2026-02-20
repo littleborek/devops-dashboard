@@ -37,6 +37,8 @@ public class Server {
 
     private Double cpuUsage;
     private Double ramUsage;
+    private Double diskUsage;
+    private String loadAvg;
     private String totalRam;
 
     @Column(name = "cpu_usage_threshold")
@@ -52,6 +54,9 @@ public class Server {
 
     @Builder.Default
     private Boolean maintenanceMode = false;
+
+    @Builder.Default
+    private Boolean skipSslCheck = false;
 
     private LocalDateTime createdAt;
 

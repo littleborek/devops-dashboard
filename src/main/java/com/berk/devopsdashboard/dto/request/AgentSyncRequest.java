@@ -10,7 +10,9 @@ public class AgentSyncRequest {
     private String serverName;
     private Double cpuUsage;
     private Double ramUsage;
+    private Double diskUsage;
+    private String loadAvg;
     private String totalRam;
-    
+
     private List<DockerContainer> containers;
 }
