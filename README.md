@@ -98,7 +98,8 @@ DevOps Dashboard, sunucularınızı, Docker konteynerlerinizi ve Kubernetes pod'
 - [ ] **Log Tail Viewer:** View remote server logs directly from the dashboard.
 - [ ] **Public Status Page:** A read‑only dashboard for sharing system status.
 - [ ] **Mobile Responsive UI:** Improved experience for tablets and phones.
-- [ ] 
+- [ ] Kubernetes pod‑resource limits / requests	K8s API’dan resourceQuota ve limitRange bilgilerini çekme.	K8s‑orchestrated ortamların tam görünümü.
+
 
 
 <img width="1469" height="839" alt="1" src="https://github.com/user-attachments/assets/8cbb4719-7f56-43f9-ac53-8b6415a3393c" />
