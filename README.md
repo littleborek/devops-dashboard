@@ -115,10 +115,12 @@ DevOps Dashboard, sunucularınızı, Docker konteynerlerinizi ve Kubernetes pod'
 <img width="1470" height="956" alt="Screenshot 2026-03-07 at 14 50 36" src="https://github.com/user-attachments/assets/7164352f-ea40-4b65-bda0-3b38adbab1ea" />
 
 
-
-<img width="1467" height="803" alt="3" src="https://github.com/user-attachments/assets/0a1b658d-c3f0-45d4-841d-9c99cdf732ba" />
-
 <img width="1470" height="956" alt="Screenshot 2026-03-07 at 14 49 30" src="https://github.com/user-attachments/assets/c44f636e-3555-470c-bea9-31482e8630cf" />
+
+<img width="1470" height="956" alt="Screenshot 2026-03-07 at 14 57 21" src="https://github.com/user-attachments/assets/8d3efddb-34c2-46e2-b3dc-ffa41f822923" />
+
+<img width="1470" height="956" alt="Screenshot 2026-03-07 at 14 57 23" src="https://github.com/user-attachments/assets/c1df9876-0028-444a-8cca-6be60dfa46b1" />
+
 <img width="1470" height="956" alt="Screenshot 2026-03-07 at 14 49 23" src="https://github.com/user-attachments/assets/c82b0bc8-4255-427d-83f7-e6e0be6d2187" />
 
 
@@ -126,6 +128,7 @@ DevOps Dashboard, sunucularınızı, Docker konteynerlerinizi ve Kubernetes pod'
 
 <img width="513" height="577" alt="5" src="https://github.com/user-attachments/assets/5233c015-8315-41c7-9117-e1ed426aeef9" />
 
+<img width="1467" height="803" alt="3" src="https://github.com/user-attachments/assets/0a1b658d-c3f0-45d4-841d-9c99cdf732ba" />
 
 
 
