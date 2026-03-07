@@ -110,13 +110,16 @@ DevOps Dashboard, sunucularınızı, Docker konteynerlerinizi ve Kubernetes pod'
 - [ ] **Mobile Responsive UI:** Improved experience for tablets and phones.
 - [ ] Kubernetes pod‑resource limits / requests	K8s API’dan resourceQuota ve limitRange bilgilerini çekme.	K8s‑orchestrated ortamların tam görünümü.
 
+<img width="1470" height="956" alt="Screenshot 2026-03-07 at 14 50 22" src="https://github.com/user-attachments/assets/f5d91933-f219-4dde-80e7-b36e5886ac06" />
+
+<img width="1470" height="956" alt="Screenshot 2026-03-07 at 14 50 36" src="https://github.com/user-attachments/assets/7164352f-ea40-4b65-bda0-3b38adbab1ea" />
 
 
-<img width="1469" height="839" alt="1" src="https://github.com/user-attachments/assets/8cbb4719-7f56-43f9-ac53-8b6415a3393c" />
-
-<img width="2940" height="4248" alt="2" src="https://github.com/user-attachments/assets/2ac5d4d2-4192-4f60-947f-4402bd115d3d" />
 
 <img width="1467" height="803" alt="3" src="https://github.com/user-attachments/assets/0a1b658d-c3f0-45d4-841d-9c99cdf732ba" />
+
+<img width="1470" height="956" alt="Screenshot 2026-03-07 at 14 49 30" src="https://github.com/user-attachments/assets/c44f636e-3555-470c-bea9-31482e8630cf" />
+<img width="1470" height="956" alt="Screenshot 2026-03-07 at 14 49 23" src="https://github.com/user-attachments/assets/c82b0bc8-4255-427d-83f7-e6e0be6d2187" />
 
 
 <img width="673" height="648" alt="4" src="https://github.com/user-attachments/assets/8fcee8e2-0148-4ff9-9a80-51885389fbe7" />
