@@ -29,14 +29,35 @@ The "AI-Ops Dashboard" is a high-performance infrastructure monitoring and diagn
 3. **Remote Agent (Bash Script):** Polls for tasks, executes commands securely, and reports back.
 4. **AI Integration Layer:** Routes queries locally or to cloud services based on config.
 
-### 🛠️ How to Use?
-1. **Run the App:** Start the project using Maven (`./mvnw spring-boot:run`).
-2. **Access:** The app runs on port **15000** by default.
-3. **Login:** Use the default credentials:
-   - **Username:** `admin`
-   - **Password:** `admin`
-4. **Add Agent:** Click "Agent Setup" on the dashboard, copy the command, and run it on your remote server (using `sudo` for full access).
-5. **Grafana:** Connect your Prometheus to `http://<master-ip>:15000/actuator/prometheus` and enjoy professional dashboards.
+### � Setup & Quick Start
+
+#### 📋 Prerequisites
+- **Java 17** or higher
+- **Docker & Docker Compose**
+- **Maven** (Optional, `./mvnw` wrapper is included)
+
+#### 1️⃣ Step 1: Start the Database
+The application requires PostgreSQL. Use the provided docker-compose file to start just the DB:
+```bash
+docker-compose up -d postgres
+```
+
+#### 2️⃣ Step 2: Run the Application
+Start the Spring Boot backend (which also serves the integrated frontend on port 15000):
+```bash
+./mvnw spring-boot:run
+```
+Once started, open your browser and go to: **`http://localhost:15000`**
+
+#### 3️⃣ Step 3: Login
+Use the default administrator credentials:
+- **Username:** `admin`
+- **Password:** `admin`
+
+#### 🔓 Optional: Grafana & Prometheus
+Connect your Prometheus/Grafana stack to the dashboard metrics endpoint:
+- **Metrics URL:** `http://<server-ip>:15000/actuator/prometheus`
+- Use this endpoint as a data source to visualize system metrics and application performance.
 
 ### 🔐 Security Updates
 - The **DELETE `/api/v1/servers/{id}`** endpoint now requires authentication. Only logged‑in users (default admin) can delete a server.
@@ -79,14 +100,35 @@ DevOps Dashboard, sunucularınızı, Docker konteynerlerinizi ve Kubernetes pod'
 - **Docker & K8s Desteği:** Konteyner ve pod'larınızı otomatik olarak tanır, canlı log ve port bilgisi sunar.
 - **Geçerli Olmayan SSL Atlatma:** Self-signed sertifikaya sahip sunucuları izleme esnekliği.
 
-### 🛠️ Nasıl Kullanılır?
-1. **Çalıştır:** Projeyi Maven ile başlatın (`./mvnw spring-boot:run`).
-2. **Erişim:** Uygulama varsayılan olarak **15000** portunda çalışır.
-3. **Giriş Yap:** Varsayılan giriş bilgileri:
-   - **Kullanıcı Adı:** `admin`
-   - **Şifre:** `admin`
-4. **Ajan Kurulumu:** Paneldeki "Ajan Kurulumu" butonuna basın, kopyalayın ve uzak sunucunuzda çalıştırın.
-5. **Grafana:** Prometheus veri kaynağı olarak `http://<sunucu-ip>:15000/actuator/prometheus` adresini ekleyin.
+### � Kurulum ve Hızlı Başlangıç
+
+#### 📋 Gereksinimler
+- **Java 17** veya üzeri
+- **Docker & Docker Compose**
+- **Maven** (Opsiyonel, `./mvnw` scripti proje içinde mevcuttur)
+
+#### 1️⃣ 1. Adım: Veritabanını Başlatın
+Uygulama PostgreSQL veritabanına ihtiyaç duyar. Docker kullanarak tek komutla başlatabilirsiniz:
+```bash
+docker-compose up -d postgres
+```
+
+#### 2️⃣ 2. Adım: Uygulamayı Çalıştırın
+Spring Boot backend sunucusunu başlatın (Frontend 15000 portunda entegre olarak sunulacaktır):
+```bash
+./mvnw spring-boot:run
+```
+Uygulama hazır olduğunda tarayıcınızdan şu adrese gidin: **`http://localhost:15000`**
+
+#### 3️⃣ 3. Adım: Giriş Yapın
+Varsayılan yönetici bilgileriyle sisteme erişebilirsiniz:
+- **Kullanıcı Adı:** `admin`
+- **Şifre:** `admin`
+
+#### 🔓 Opsiyonel: Grafana & Prometheus Entegrasyonu
+Grafana/Prometheus kurulumunuzu dashboard metrik ucuna bağlayabilirsiniz:
+- **Metrik Adresi:** `http://<sunucu-ip>:15000/actuator/prometheus`
+- Bu adresi Prometheus veri kaynağı (data source) olarak ekleyip profesyonel dashboard'lar oluşturabilirsiniz.
 
 ### 🔐 Güvenlik Güncellemeleri
 - **DELETE `/api/v1/servers/{id}`** endpointi artık kimlik doğrulama gerektiriyor. Sadece oturum açmış kullanıcılar (varsayılan admin) sunucu silebilir.
