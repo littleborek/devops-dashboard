@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -54,6 +55,17 @@ public class AgentReceiverController {
         // Prometheus Metriklerini Kaydet/Güncelle
         metricsService.registerServerMetrics(server);
 
+        List<String> incomingIds = request.getContainers().stream()
+                .map(DockerContainer::getContainerId)
+                .collect(java.util.stream.Collectors.toList());
+
+        List<DockerContainer> existingContainers = containerRepository.findByServerId(server.getId());
+        for (DockerContainer existing : existingContainers) {
+            if (!incomingIds.contains(existing.getContainerId())) {
+                containerRepository.delete(existing);
+            }
+        }
+
         for (DockerContainer incomingContainer : request.getContainers()) {
             Optional<DockerContainer> existing = containerRepository
                     .findByContainerId(incomingContainer.getContainerId());
@@ -91,8 +103,30 @@ public class AgentReceiverController {
                 "export LC_ALL=C\n" +
                 "MASTER_URL=\"" + masterUrl + "\"\n" +
                 "K8S_URL=\"" + k8sUrl + "\"\n" +
+                "TASK_URL=\"${MASTER_URL//\\/agent\\/sync/\\/tasks}\"\n" +
                 "SERVER_NAME=$(hostname)\n" +
                 "SERVER_IP=$(hostname -I | awk '{print $1}')\n" +
+                "\n" +
+                "fetch_and_execute_tasks() {\n" +
+                "  # Fetch pending tasks\n" +
+                "  TASKS_JSON=$(curl -s -X GET \"$TASK_URL/pending\")\n" +
+                "  if [ -z \"$TASKS_JSON\" ] || [ \"$TASKS_JSON\" = \"[]\" ]; then return; fi\n" +
+                "  \n" +
+                "  # Parse and execute (requires jq)\n" +
+                "  if command -v jq >/dev/null 2>&1; then\n" +
+                "    echo \"$TASKS_JSON\" | jq -c '.[]' | while read i; do\n" +
+                "        TASK_ID=$(echo $i | jq -r '.id')\n" +
+                "        COMMAND=$(echo $i | jq -r '.command')\n" +
+                "        if [ -n \"$TASK_ID\" ] && [ \"$TASK_ID\" != \"null\" ]; then\n" +
+                "            RESULT=$(eval \"$COMMAND\" 2>&1)\n" +
+                "            ESCAPED_RESULT=$(echo \"$RESULT\" | jq -Rs .)\n" +
+                "            PAYLOAD=\"{\\\"status\\\": \\\"EXECUTED\\\", \\\"result\\\": $ESCAPED_RESULT}\"\n" +
+                "            curl -s -X POST -H \"Content-Type: application/json\" -d \"$PAYLOAD\" \"$TASK_URL/result/$TASK_ID\" > /dev/null\n"
+                +
+                "        fi\n" +
+                "    done\n" +
+                "  fi\n" +
+                "}\n" +
                 "\n" +
                 "send_data() {\n" +
                 "  # CPU & RAM\n" +
@@ -141,6 +175,7 @@ public class AgentReceiverController {
                 "\n" +
                 "for i in {1..4}; do\n" +
                 "  send_data\n" +
+                "  fetch_and_execute_tasks\n" +
                 "  if [ $i -lt 4 ]; then sleep 15; fi\n" +
                 "done\n" +
                 "EOF\n" +
@@ -175,6 +210,17 @@ public class AgentReceiverController {
             server.setStatus(ServerStatus.ONLINE);
             serverRepository.save(server);
         }
+        List<String> incomingUids = request.getPods().stream()
+                .map(KubernetesPod::getUid)
+                .collect(java.util.stream.Collectors.toList());
+
+        List<KubernetesPod> existingPods = k8sRepository.findByServerId(server.getId());
+        for (KubernetesPod existing : existingPods) {
+            if (!incomingUids.contains(existing.getUid())) {
+                k8sRepository.delete(existing);
+            }
+        }
+
         for (KubernetesPod incomingPod : request.getPods()) {
             Optional<KubernetesPod> existing = k8sRepository.findByUid(incomingPod.getUid());
 

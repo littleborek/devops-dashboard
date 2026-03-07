@@ -23,6 +23,7 @@ public class NotificationService {
 
     private final SystemSettingRepository settingRepository;
     private final ObjectMapper objectMapper;
+    private final TelegramNotificationService telegramNotificationService;
 
     @Async
     public void sendOfflineAlert(Server server) {
@@ -47,6 +48,12 @@ public class NotificationService {
 
             sendWebhook(webhookUrl, jsonPayload);
             log.info("Discord Bildirimi Gönderildi: {}", server.getName());
+
+            telegramNotificationService.sendNotification(
+                    "SERVER DOWN: " + server.getName(),
+                    "IP: " + server.getIpAddress() + "\nCategory: "
+                            + (server.getCategory() != null ? server.getCategory() : "General"),
+                    "CRITICAL");
 
         } catch (Exception e) {
             log.error("Bildirim Gönderilemedi: {}", e.getMessage());
@@ -74,6 +81,12 @@ public class NotificationService {
 
             sendWebhook(webhookUrl, jsonPayload);
             log.info("Discord Kaynak Uyarısı Gönderildi: {}/{}", server.getName(), resourceType);
+
+            telegramNotificationService.sendNotification(
+                    "HIGH RESOURCE USAGE: " + server.getName(),
+                    "Resource: " + resourceType + "\nUsage: " + String.format("%.2f%%", usage) + " (Threshold: "
+                            + String.format("%.2f%%", threshold) + ")",
+                    "WARNING");
 
         } catch (Exception e) {
             log.error("Resource Bildirimi Gönderilemedi: {}", e.getMessage());

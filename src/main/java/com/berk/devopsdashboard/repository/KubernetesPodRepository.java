@@ -8,12 +8,15 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface KubernetesPodRepository extends JpaRepository<KubernetesPod, Long> {
 
     Optional<KubernetesPod> findByUid(String uid);
+
+    List<KubernetesPod> findByServerId(Long serverId);
 
     @Transactional
     @Modifying

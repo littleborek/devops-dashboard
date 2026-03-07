@@ -9,26 +9,31 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-@Controller
-@RequestMapping("/")
-@RequiredArgsConstructor
-public class DashboardController {
-
-    private final ServerService serverService;
-    private final DeploymentService deploymentService;
-
-    @GetMapping
-    public String showDashboard(Model model) {
-        model.addAttribute("servers", serverService.getAllServers());
-        return "dashboard"; 
-    }
-
-
-    @GetMapping("/server/{id}")
-    public String showServerDetail(@PathVariable Long id, Model model) {
-        model.addAttribute("server", serverService.getServerById(id));
-        model.addAttribute("deployments", deploymentService.getDeploymentsByServerId(id));
-        
-        return "server-detail"; 
-    }
-}
+/*
+ * @Controller
+ * 
+ * @RequestMapping("/")
+ * 
+ * @RequiredArgsConstructor
+ * public class DashboardController {
+ * 
+ * private final ServerService serverService;
+ * private final DeploymentService deploymentService;
+ * 
+ * @GetMapping
+ * public String showDashboard(Model model) {
+ * model.addAttribute("servers", serverService.getAllServers());
+ * return "dashboard";
+ * }
+ * 
+ * 
+ * @GetMapping("/server/{id}")
+ * public String showServerDetail(@PathVariable Long id, Model model) {
+ * model.addAttribute("server", serverService.getServerById(id));
+ * model.addAttribute("deployments",
+ * deploymentService.getDeploymentsByServerId(id));
+ * 
+ * return "server-detail";
+ * }
+ * }
+ */

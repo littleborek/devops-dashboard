@@ -22,7 +22,7 @@ public class DockerContainer {
     private String containerId;
 
     private String name;
-    
+
     private String image;
 
     private String state;
@@ -30,9 +30,14 @@ public class DockerContainer {
     private String status;
 
     private LocalDateTime lastUpdated;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "server_id")
     @JsonIgnore
     private Server server;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("serverName")
+    public String getServerName() {
+        return server != null ? server.getName() : null;
+    }
 }

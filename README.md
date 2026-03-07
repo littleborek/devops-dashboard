@@ -1,4 +1,4 @@
-# 🚀 DevOps Dashboard
+# 🚀 AI-Ops Dashboard
 
 [English](#english) | [Türkçe](#türkçe)
 
@@ -7,23 +7,27 @@
 ## English
 
 ### 🎯 What is it?
-DevOps Dashboard is a simple and powerful tool to monitor your servers, Docker containers, and Kubernetes pods from a single screen. It helps you track uptime, system resources (CPU/RAM/Disk), and alerts you via Discord when something goes wrong.
+The "AI-Ops Dashboard" is a high-performance infrastructure monitoring and diagnostic ecosystem. Its primary objective is to solve the "context gap" in server management. While traditional tools notify you that a service is down, this platform leverages Artificial Intelligence to explain why it happened. By centralizing telemetry from remote servers (Oracle Cloud, AWS, or local nodes), the dashboard provides a unified view of system health and automated incident response.
 
-### 👤 Who is it for?
-- Developers and System Admins who manage multiple servers.
-- Home lab enthusiasts (monitoring local PCs or IoT devices).
-- Teams who want real-time notifications on server health.
+### 👤 Target Users
+- **DevOps Engineers & SREs:** Who require rapid Root Cause Analysis (RCA) and remote command execution.
+- **Home-lab Enthusiasts:** Users managing complex local clusters (Docker/K8s) who need an intelligent notification layer.
+- **System Administrators:** Who need to monitor servers behind restrictive firewalls without exposing high-risk ports.
 
-### ✨ Key Features
-- **Real-time Monitoring:** Sees server status and resource usage instantly via SSE (Server-Sent Events).
-- **Comprehensive Metrics:** CPU, RAM, **Disk Usage**, and **Load Average** tracking.
-- **15s High-Frequency Polling:** Near real-time data updates for critical systems.
-- **Grafana & Prometheus Ready:** Built-in metrics exporter at `/actuator/prometheus` for professional visualization.
-- **One-Liner Agent Setup:** Install or **Uninstall** the lightweight Linux agent with a single command.
-- **Docker & K8s support:** Automatically discover and monitor your containers and pods.
-- **Discord Alerts:** Sends automatic notifications to your Discord channel on status changes or high resource usage.
-- **Maintenance Mode:** Stop alerts temporarily when you are working on a server.
-- **SSL Bypass:** Easily monitor servers with self-signed certificates.
+### ✨ Core AI-Ops Features Added
+- **AI Diagnostic Layer:** Integration with Local LLMs (LM Studio/Ollama) and Cloud LLMs (OpenAI/Claude) using a Bring-Your-Own-Key (BYOK) architecture.
+- **Root Cause Analysis (RCA):** Automated packaging of server metrics (CPU, RAM, Status) to query the AI and display human-readable explanations in a polished modal interface.
+- **Terminal-style AI Chatbot:** A macOS-inspired glassmorphic chat widget at the bottom right, processing natural language queries about system state.
+- **Task Execution Queue:** A new secure polling system where remote agents pull commands (`eval` via bash script) and post results back to the dashboard, bypassing strict inbound firewalls.
+- **IP Whitelisting & Secure Agent Sync:** Validation of agent IPs via headers or direct extraction during task fetching to prevent unauthorized remote command execution.
+- **Telegram Alert Bridge:** Integrated Telegram API along with the existing Discord alerts for critical server states.
+- **Modernized UI/UX:** Complete overhaul of the Server Detail page and Chatbot using TailwindCSS, featuring backdrop-blur, dynamic micro-animations, and modern prose styling.
+
+### 🏗️ Architecture
+1. **Frontend (Angular):** Hosts the Notification Hub, Chat Interface, and stores User API Keys securely.
+2. **Backend (Spring Boot):** Orchestrates tasks, bridges to Telegram, and packages contexts for AI models.
+3. **Remote Agent (Bash Script):** Polls for tasks, executes commands securely, and reports back.
+4. **AI Integration Layer:** Routes queries locally or to cloud services based on config.
 
 ### 🛠️ How to Use?
 1. **Run the App:** Start the project using Maven (`./mvnw spring-boot:run`).
@@ -58,16 +62,22 @@ DevOps Dashboard, sunucularınızı, Docker konteynerlerinizi ve Kubernetes pod'
 - Kendi ev ağını yönetenler (PC'ler veya IoT cihazlarını izlemek için).
 - Sunucu durumları hakkında anlık bildirim almak isteyen ekipler.
 
-### ✨ Önemli Özellikler
-- **Anlık İzleme:** SSE (Server-Sent Events) ile sayfa yenilemeden sunucu durumlarını görürsünüz.
-- **Genişletilmiş Metrikler:** CPU, RAM, **Disk Doluluğu** ve **Yük Ortalaması (Load Avg)** takibi.
-- **15 Saniyelik Hızlı Polling:** Kritik sistemler için saniyeler içinde güncellenen veri akışı.
-- **Grafana & Prometheus Entegrasyonu:** `/actuator/prometheus` üzerinden profesyonel görselleştirme desteği.
-- **Tek Satır Ajan Yönetimi:** Linux ajanını tek komutla kurun veya **kaldırın (Uninstall)**.
-- **Docker & K8s Desteği:** Konteyner ve pod'larınızı otomatik olarak tanır ve izler.
-- **Discord Bildirimleri:** Durum değişikliklerinde veya yüksek kaynak kullanımında Discord'a anlık mesaj gönderir.
-- **Bakım Modu:** Sunucu üzerinde çalışma yaparken bildirimleri geçici olarak durdurun.
-- **SSL Atlatma:** Kendi sertifikası (self-signed) olan sunucuları kolayca izleyin.
+### ✨ Eklenen Yeni AI-Ops Özellikleri
+- **Yapay Zeka (AI) Teşhis Katmanı:** Kendi API Anahtarınızı Getirin (BYOK) mimarisi ile Yerel YZ (LM Studio/Ollama) ve Bulut YZ (OpenAI/Claude) entegrasyonu sağlandı.
+- **Kök Neden Analizi (RCA):** Sunucu metriklerinin (CPU, RAM, Durum) otomatik olarak paketlenip YZ'ye sorulması ve sonuçların şık, bulanık arka planlı (glassmorphic) bir ekranda gösterilmesi (Analyze with AI butonu).
+- **Terminal Tasarımlı Chatbot:** Cihazların güncel durumunu doğal dilde sorgulayabilmeniz için sağ alt köşeye eklenen, daktilo animasyonlu macOS terminal hissi veren modern akıllı asistan.
+- **Görev Yönetimi ve Güvenli Komut Yürütme (Task Queue):** Güvenlik duvarlarını aşan pasif yapı; sunuculara kurulan ajanlar (bash script) her 15 saniyede bir dashboard'a bağlanıp yürütülecek komut var mı kontrol eder, çalıştırır ve `.json` formatında sonucu sisteme geri iletir.
+- **IP Doğrulama (Whitelisting):** Görev kuyruğu erişimlerinde uzak ajanın IP adresi kayıtlı veritabanındaki IP ile kontrol edilerek yetkisiz erişimler engellenmiştir.
+- **Telegram Bildirim Köprüsü:** Mevcut Discord yapısına ek olarak, sistem kritik duruma geçtiği an Telegram botunuz üzerinden anlık cep telefonu bildirimleri gönderir.
+- **Modern Arayüz (UI/UX) Yenilikleri:** Arayüz bileşenleri baştan tasarlandı; TailwindCSS kullanılarak degrade renkler, mikro asılı kalma (hover) animasyonları, Modal pencereler ve tam duyarlı (responsive) tasarım entegre edildi.
+
+### ⚙️ Mevcut Klasik Özellikler
+- **Anlık İzleme:** SSE (Server-Sent Events) ile sayfa yenilemeden sunucu durumlarını görürsünüz, **15 saniyelik** periyotlarla data çeker.
+- **Genişletilmiş Metrikler:** CPU, RAM, Disk Doluluğu ve Yük Ortalaması (Load Avg) takibi.
+- **Grafana & Prometheus Entegrasyonu:** `/actuator/prometheus` üzerinden veri gönderimi sağlar.
+- **Tek Satır Ajan Yönetimi:** Sunucu tarafındaki Linux ajanını tek komutla kurma imkanı.
+- **Docker & K8s Desteği:** Konteyner ve pod'larınızı otomatik olarak tanır, canlı log ve port bilgisi sunar.
+- **Geçerli Olmayan SSL Atlatma:** Self-signed sertifikaya sahip sunucuları izleme esnekliği.
 
 ### 🛠️ Nasıl Kullanılır?
 1. **Çalıştır:** Projeyi Maven ile başlatın (`./mvnw spring-boot:run`).

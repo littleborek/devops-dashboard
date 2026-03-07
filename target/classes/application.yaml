@@ -11,7 +11,7 @@ spring:
     cache-duration: PT1H
   
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/devops_db}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://127.0.0.1:5432/devops_db}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver

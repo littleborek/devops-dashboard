@@ -28,6 +28,7 @@ public class ServerStatusMonitor {
     private final ServerService serverService;
     private final NotificationService notificationService;
     private final SseService sseService;
+    private final com.berk.devopsdashboard.repository.DockerContainerRepository containerRepository;
 
     @Scheduled(fixedRate = 15000)
     public void updateServerStatus() {
@@ -72,12 +73,29 @@ public class ServerStatusMonitor {
                 }
             }
 
+            // Sunucu OFFLINE ise containerları da offline yap
+            if (newStatus == ServerStatus.OFFLINE) {
+                markContainersOffline(server.getId());
+            }
+
             if (server.getStatus() == ServerStatus.ONLINE && !server.isMaintenanceMode()) {
                 checkThresholds(server);
             }
 
         } catch (Exception e) {
             log.error("Sunucu kontrol hatası ({}): {}", server.getName(), e.getMessage());
+        }
+    }
+
+    private void markContainersOffline(Long serverId) {
+        var containers = containerRepository.findByServerId(serverId);
+        for (var c : containers) {
+            if (!"offline".equals(c.getState())) {
+                c.setState("offline");
+                c.setStatus("Server Offline");
+                c.setLastUpdated(LocalDateTime.now());
+                containerRepository.save(c);
+            }
         }
     }
 

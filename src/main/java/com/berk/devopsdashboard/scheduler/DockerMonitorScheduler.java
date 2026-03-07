@@ -29,7 +29,7 @@ public class DockerMonitorScheduler {
     private final DockerClient dockerClient;
     private final DockerContainerRepository dockerContainerRepository;
     private final ServerRepository serverRepository;
-    private final SystemMetricsService metricsService; 
+    private final SystemMetricsService metricsService;
 
     @Value("${app.mode:server}")
     private String appMode;
@@ -39,7 +39,7 @@ public class DockerMonitorScheduler {
 
     @Value("${agent.my-ip:127.0.0.1}")
     private String myIp;
-    
+
     @Value("${agent.server-name:Localhost}")
     private String serverName;
 
@@ -95,12 +95,15 @@ public class DockerMonitorScheduler {
         localServer.setTotalRam(metricsService.getTotalRam());
         localServer.setLastResponseTime(0);
         serverRepository.save(localServer);
-        // ------------------------------------------
+
+        // Live container ID'leri topla
+        java.util.Set<String> liveContainerIds = new java.util.HashSet<>();
 
         for (Container remoteContainer : containers) {
             String containerId = remoteContainer.getId();
+            liveContainerIds.add(containerId);
             Optional<DockerContainer> existingOpt = dockerContainerRepository.findByContainerId(containerId);
-             if (existingOpt.isPresent()) {
+            if (existingOpt.isPresent()) {
                 DockerContainer dbContainer = existingOpt.get();
                 dbContainer.setState(remoteContainer.getState());
                 dbContainer.setStatus(remoteContainer.getStatus());
@@ -118,6 +121,17 @@ public class DockerMonitorScheduler {
                         .server(localServer)
                         .build();
                 dockerContainerRepository.save(newContainer);
+            }
+        }
+
+        // DB'de olup Docker'da artık olmayan containerleri "exited" olarak işaretle
+        List<DockerContainer> dbContainers = dockerContainerRepository.findByServerId(localServer.getId());
+        for (DockerContainer dbContainer : dbContainers) {
+            if (!liveContainerIds.contains(dbContainer.getContainerId())) {
+                dbContainer.setState("removed");
+                dbContainer.setStatus("Not Found");
+                dbContainer.setLastUpdated(LocalDateTime.now());
+                dockerContainerRepository.save(dbContainer);
             }
         }
     }

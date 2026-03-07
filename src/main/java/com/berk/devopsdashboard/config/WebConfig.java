@@ -31,4 +31,12 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(localeChangeInterceptor());
     }
+
+    @Override
+    public void addViewControllers(org.springframework.web.servlet.config.annotation.ViewControllerRegistry registry) {
+        registry.addViewController("/{path:[^\\.]*}")
+                .setViewName("forward:/index.html");
+        registry.addViewController("/server/{id:[0-9]*}")
+                .setViewName("forward:/index.html");
+    }
 }

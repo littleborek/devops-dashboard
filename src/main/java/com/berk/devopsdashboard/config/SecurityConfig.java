@@ -5,6 +5,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 
 @Configuration
 @EnableWebSecurity
@@ -18,17 +20,35 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login", "/css/**", "/js/**", "/img/**", "/error", "/api/v1/agent/**",
-                                "/actuator/**")
+                        .requestMatchers("/api/v1/agent/**", "/api/v1/k8s/**", "/actuator/**")
                         .permitAll()
-                        .anyRequest().authenticated())
+                        .requestMatchers("/api/v1/servers/**", "/api/v1/deployments/**", "/api/v1/tasks/queue/**")
+                        .authenticated()
+                        .anyRequest().permitAll())
                 .formLogin(form -> form
-                        .loginPage("/login")
-                        .defaultSuccessUrl("/", true)
+                        .loginProcessingUrl("/api/auth/login")
+                        .successHandler((request, response, authentication) -> {
+                            response.setStatus(HttpStatus.OK.value());
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"message\":\"Login successful\",\"username\":\""
+                                    + authentication.getName() + "\"}");
+                        })
+                        .failureHandler((request, response, exception) -> {
+                            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"error\":\"Invalid credentials\"}");
+                        })
                         .permitAll())
                 .logout(logout -> logout
-                        .logoutSuccessUrl("/login?logout")
-                        .permitAll());
+                        .logoutUrl("/api/auth/logout")
+                        .logoutSuccessHandler((request, response, authentication) -> {
+                            response.setStatus(HttpStatus.OK.value());
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"message\":\"Logged out\"}");
+                        })
+                        .permitAll())
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)));
 
         return http.build();
     }
