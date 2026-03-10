@@ -50,18 +50,29 @@ Start the Spring Boot backend (which also serves the integrated frontend on port
 ```
 Once started, open your browser and go to: **`http://localhost:15000`**
 
-#### 3️⃣ Step 3: Configure mTLS (Browser Certificate)
-Because the dashboard now uses strict **Mutual TLS (mTLS)** for security, your browser must present a valid digital certificate to access the backend API.
-1. Locate the generated certificate file in your project directory: `certs/client.p12`
-2. **Mac (Keychain Access):** Double-click the `client.p12` file to open Keychain Access. Add it to the "login" keychain. When prompted for the password, enter: `ai-ops-password`. Verify the certificate is trusted.
-3. **Windows (Certificate Manager):** Double-click the `client.p12` file to open the Certificate Import Wizard. Install it for the Current User. When prompted for the password, enter: `ai-ops-password`. Let Windows automatically select the certificate store (Personal).
-4. **Chrome/Firefox:** You can also manually import the `.p12` file via Browser Settings -> Privacy and Security -> Security -> Manage Certificates.
-5. After importing, completely restart your browser. When you visit the dashboard, the browser will ask you to select the certificate to authenticate.
+#### 3️⃣ Step 3: Configure Security & mTLS (CRITICAL)
+This application uses **Mutual TLS (mTLS)** for enterprise-grade security. This means the server verifies your identity via a certificate, and your browser verifies the server via a Root CA. **Without these two steps, you will face SSL connection errors.**
+
+**A. Establish Server Trust (Root CA):**
+Your computer needs to trust the "Authority" that signed our certificates.
+1. Locate `certs/rootCA.crt` in the project root.
+2. **Mac:** Double-click the file -> Keychain Access opens. Find "AI-Ops-Root-CA" -> Right-click "Get Info" -> Expand **Trust** -> Set **"When using this certificate"** to **"Always Trust"**.
+3. **Windows:** Double-click the file -> "Install Certificate" -> "Local Machine" -> Place in "Trusted Root Certification Authorities".
+
+**B. Install Your Identity (Client Certificate):**
+1. Locate `certs/client.p12`.
+2. Double-click to install. **Password:** `ai-ops-password`.
+3. Mac users: Ensure it's added to the "login" keychain.
+
+**C. Accessing the Dashboard:**
+1. **URL:** Use **`https://localhost:15000`**. (Do not use port 4200 for mTLS testing as it lacks SSL support).
+2. **Browser Prompt:** A popup will appear asking you to "Select a Certificate". Choose the **ai-ops-agent** certificate and click OK.
+3. If using Firefox: You MUST manually import the `.p12` file via `Settings -> Privacy & Security -> View Certificates -> Your Certificates -> Import`.
 
 #### 4️⃣ Step 4: Login
-Use the default administrator credentials:
+Once the certificate handshake is complete, use:
 - **Username:** `admin`
-- **Password:** `admin`
+- **Password:** `admin` (Auto-generated on first run)
 
 #### 🔓 Optional: Grafana & Prometheus
 Connect your Prometheus/Grafana stack to the dashboard metrics endpoint:
@@ -134,29 +145,29 @@ Spring Boot backend sunucusunu başlatın (Frontend 15000 portunda entegre olara
 ```
 Uygulama hazır olduğunda tarayıcınızdan şu adrese gidin: **`http://localhost:15000`**
 
-#### 3️⃣ 3. Adım: Tarayıcı Sertifikasını (mTLS) Kurun (ÇOK ÖNEMLİ)
-Uygulama artık üst düzey **mTLS (X.509)** güvenliği kullandığı için, tarayıcınızın kendini API'ye tanıtabilmesi amacıyla dijital sertifikaya ihtiyacı vardır. Aksi halde sayfa açılmaz veya API istekleri hata verir. P12 dosyasını işletim sisteminize eklemelisiniz:
+#### 3️⃣ 3. Adım: Güvenlik ve mTLS Yapılandırması (KRİTİK)
+Bu uygulama, kurumsal düzeyde **Mutual TLS (mTLS)** güvenliği kullanmaktadır. Yani sadece kullanıcı adı/şifre yeterli değildir; tarayıcınızın sunucuya, sunucunuzun da tarayıcıya güvenmesi gerekir. **Bu adımları atlamanız durumunda SSL bağlantı hatası alırsınız.**
 
-**MacOS İçin Kurulum:**
-1. Proje dizinindeki `certs/client.p12` dosyasına çift tıklayın.
-2. Açılan **Anahtar Zinciri Erişimi (Keychain Access)** uygulamasında sertifikayı `giriş (login)` veya `Sistem` zincirine ekleyin.
-3. Sorulduğunda parola olarak `ai-ops-password` yazın.
-4. Yüklenen sertifikaya (genellikle adına *ai-ops-agent* falan diyebilir) çift tıklayın, **Güven (Trust)** sekmesini açın ve "Bu sertifikayı kullanırken:" kısmını **Her Zaman Güven (Always Trust)** yapın.
-5. Tarayıcınızı (Chrome, Safari vs.) **tamamen kapatıp yeniden başlatın**.
+**A. Sunucu Güvenini Sağlayın (Root CA):**
+Bilgisayarınızın, sertifikalarımızı imzalayan "Makamı" tanıması gerekir.
+1. Proje kök dizinindeki `certs/rootCA.crt` dosyasını bulun ve çift tıklayın.
+2. **MacOS:** Anahtar Zinciri (Keychain Access) açılacaktır. "AI-Ops-Root-CA" sertifikasını bulun -> Sağ Tık "Bilgi Ver" -> **Güven (Trust)** sekmesini açın -> **"Bu sertifikayı kullanırken:"** ayarını **"Her Zaman Güven (Always Trust)"** yapın.
+3. **Windows:** Dosyaya çift tıklayın -> "Sertifika Yükle" -> "Yerel Makine" -> Sertifika deposu olarak "Güvenilen Kök Sertifika Yetkilileri"ni seçin.
 
-**Windows İçin Kurulum:**
-1. Proje dizinindeki `certs/client.p12` dosyasına çift tıklayın. Sertifika içe aktarma sihirbazı açılır.
-2. `Geçerli Kullanıcı (Current User)` seçip İleri deyin.
-3. Parola olarak `ai-ops-password` girin.
-4. Sihirbazın sertifika depolama alanını otomatik seçmesine (Kişisel) izin verin ve aktarımı tamamlayın.
-5. Tarayıcınızı **tamamen kapatıp yeniden başlatın**.
+**B. Kendi Kimliğinizi Tanıtın (Client Certificate):**
+1. Proje kök dizinindeki `certs/client.p12` dosyasını bulun.
+2. Çift tıklayarak yükleyin. **Parola:** `ai-ops-password`.
+3. MacOS kullanıcıları "login" veya "giriş" zincirine eklendiğinden emin olmalıdır.
 
-> *Not: Tarayıcıdan siteye (localhost:4200) ilk girdiğinizde, tarayıcı size ekranda ufak bir pencere ile "Kimliğinizi doğrulamak için bir sertifika seçin" penceresi çıkaracaktır. Yüklediğiniz sertifikayı seçip Tamam demelisiniz.*
+**C. Panele Giriş Yapın:**
+1. **Adres:** Mutlaka **`https://localhost:15000`** adresini kullanın. (Port 4200 üzerinden SSL testi yapılamaz).
+2. **Sertifika Seçimi:** Adrese girdiğinizde tarayıcınız "Kimliğinizi doğrulamak için bir sertifika seçin" penceresini çıkaracaktır. Listeden **ai-ops-agent** sertifikasını seçin ve Tamam deyin.
+3. **Önemli Not (Firefox):** Firefox sistem sertifikalarına bakmaz. `Ayarlar -> Gizlilik ve Güvenlik -> Sertifikaları Göster -> Sertifikalarınız -> İçe Aktar` yolunu izleyerek `.p12` dosyasını elle yüklemelisiniz.
 
 #### 4️⃣ 4. Adım: Giriş Yapın
-Varsayılan yönetici bilgileriyle sisteme erişebilirsiniz:
+Sertifika el sıkışması başarıyla tamamlandığında giriş ekranına ulaşacaksınız:
 - **Kullanıcı Adı:** `admin`
-- **Şifre:** `admin`
+- **Şifre:** `admin` (İlk çalıştırmada veritabanında otomatik oluşturulur)
 
 #### 🔓 Opsiyonel: Grafana & Prometheus Entegrasyonu
 Grafana/Prometheus kurulumunuzu dashboard metrik ucuna bağlayabilirsiniz:

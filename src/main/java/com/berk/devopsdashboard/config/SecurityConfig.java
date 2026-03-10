@@ -6,7 +6,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 
@@ -18,7 +17,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, UserDetailsService userDetailsService)
+            throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
@@ -29,7 +29,7 @@ public class SecurityConfig {
                         .anyRequest().permitAll())
                 .x509(x509 -> x509
                         .subjectPrincipalRegex("CN=(.*?)(?:,|$)")
-                        .userDetailsService(userDetailsService()))
+                        .userDetailsService(userDetailsService))
                 .formLogin(form -> form
                         .loginProcessingUrl("/api/auth/login")
                         .successHandler((request, response, authentication) -> {
@@ -56,24 +56,6 @@ public class SecurityConfig {
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)));
 
         return http.build();
-    }
-
-    @Bean
-    public UserDetailsService userDetailsService() {
-        return username -> {
-            if (username.equals("ai-ops-agent")) {
-                return User.withUsername(username)
-                        .password("")
-                        .roles("AGENT")
-                        .build();
-            } else if (username.equals("admin")) {
-                return User.withUsername("admin")
-                        .password(passwordEncoder().encode("admin"))
-                        .roles("ADMIN")
-                        .build();
-            }
-            throw new org.springframework.security.core.userdetails.UsernameNotFoundException("User not found");
-        };
     }
 
     @Bean
