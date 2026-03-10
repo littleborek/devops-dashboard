@@ -83,7 +83,8 @@ public class AgentReceiverController {
             }
         }
 
-        return ResponseEntity.ok("Docker & Metrics Sync Başarılı");
+        return ResponseEntity
+                .ok(String.format("{\"message\": \"Docker & Metrics Sync Başarılı\", \"id\": %d}", server.getId()));
     }
 
     @GetMapping("/script")

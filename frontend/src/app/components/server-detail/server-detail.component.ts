@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AiService } from '../../services/ai.service';
+import { LogStreamService, LogMessage } from '../../services/log-stream.service';
 
 @Component({
     selector: 'app-server-detail',
@@ -75,6 +76,10 @@ import { AiService } from '../../services/ai.service';
                     <i class="fa-solid fa-robot mr-2" [class.fa-spin]="analyzing()"></i> 
                     {{ analyzing() ? 'Analiz Ediliyor...' : 'AI ile Analiz Et' }}
                 </button>
+                <button (click)="openLiveLogs()"
+                    class="w-full mt-3 bg-green-700/80 hover:bg-green-600 border border-green-600 text-white font-semibold py-3 rounded shadow-lg transition flex justify-center items-center transform active:scale-95">
+                    <i class="fa-solid fa-play mr-2"></i> Canlı Container Logu Başlat
+                </button>
 
                 <!-- AI Analysis Modal -->
                 @if (aiAnalysisResult()) {
@@ -142,6 +147,50 @@ import { AiService } from '../../services/ai.service';
                                     placeholder="Enter bash command (e.g. ls -la, free -m, ps aux)"
                                     autofocus>
                               <i *ngIf="terminalWaiting()" class="fa-solid fa-circle-notch fa-spin text-gray-500 ml-2"></i>
+                          </div>
+                      </div>
+                  </div>
+                }
+
+                <!-- Live Log Modal -->
+                @if (showLiveLogModal()) {
+                  <div class="fixed inset-0 bg-slate-900/90 backdrop-blur z-[100] flex items-center justify-center p-4 fade-in" (click)="closeLiveLogs()">
+                      <div class="bg-black border border-green-500/50 rounded max-w-4xl w-full flex flex-col relative overflow-hidden font-mono h-[80vh]" (click)="$event.stopPropagation()">
+                          <!-- Mac Style Header -->
+                          <div class="flex items-center px-4 py-2 border-b border-gray-800 bg-gray-900 justify-between">
+                             <div class="flex items-center">
+                                 <i class="fa-solid fa-tower-broadcast text-green-500 animate-pulse mr-3"></i>
+                                 <span class="text-sm text-green-400 font-bold tracking-wider">LIVE LOG STREAM</span>
+                             </div>
+                             <button (click)="closeLiveLogs()" class="text-gray-400 hover:text-white transition">
+                                 <i class="fa-solid fa-times"></i>
+                             </button>
+                          </div>
+                          
+                          <!-- Modal Body -->
+                          <div class="p-4 overflow-y-auto flex-1 custom-scrollbar text-xs text-gray-300 leading-relaxed break-words" id="liveLogContainer">
+                              <div class="text-blue-400 mb-2">Connecting to WebSocket broker... OK.</div>
+                              <div class="text-green-500 mb-4 font-bold">Waiting for agent log stream...</div>
+                              
+                              <div class="space-y-1">
+                                @for (log of liveLogs(); track $index) {
+                                    <div class="hover:bg-gray-900 px-1 py-0.5 rounded flex">
+                                        <span class="text-gray-600 w-32 shrink-0">{{ log.timestamp | date:'HH:mm:ss.SSS' }}</span>
+                                        <span [class.text-red-400]="log.level === 'ERROR'" 
+                                              [class.text-yellow-400]="log.level === 'WARN'"
+                                              [class.text-green-300]="log.level === 'INFO'"
+                                              class="ml-2">{{ log.content }}</span>
+                                    </div>
+                                }
+                              </div>
+                          </div>
+                          <div class="px-4 py-2 border-t border-gray-800 bg-gray-900 flex justify-between items-center text-xs">
+                              <div class="flex space-x-2 w-1/2">
+                                  <input type="text" [(ngModel)]="containerToLog" placeholder="Container ID" class="bg-black border border-gray-700 rounded px-2 py-1 text-gray-300 flex-1 outline-none focus:border-green-500">
+                                  <button (click)="startLogStream()" class="bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded transition whitespace-nowrap">Akışı Başlat</button>
+                                  <button (click)="stopLogStream()" class="bg-red-700 hover:bg-red-600 text-white px-3 py-1 rounded transition whitespace-nowrap">Akışı Durdur</button>
+                              </div>
+                              <span class="text-gray-500">{{ liveLogs().length }} lines received</span>
                           </div>
                       </div>
                   </div>
@@ -224,6 +273,7 @@ export class ServerDetailComponent implements OnInit {
     private route = inject(ActivatedRoute);
     private apiService = inject(ApiService);
     private aiService = inject(AiService);
+    private logStreamService = inject(LogStreamService);
 
     server = signal<any>(null);
     deployments = signal<any[]>([]);
@@ -237,6 +287,11 @@ export class ServerDetailComponent implements OnInit {
     terminalOutput = signal<string[]>([]);
     terminalWaiting = signal(false);
     private intervalId: any = null;
+
+    // Live Logs State
+    showLiveLogModal = signal(false);
+    liveLogs = signal<LogMessage[]>([]);
+    containerToLog = '';
 
     ngOnInit() {
         this.route.params.subscribe(params => {
@@ -345,5 +400,38 @@ export class ServerDetailComponent implements OnInit {
                 this.terminalWaiting.set(false);
             }
         });
+    }
+
+    // Live Log Methods
+    openLiveLogs() {
+        this.showLiveLogModal.set(true);
+        this.logStreamService.connect(this.server().id);
+
+        // Subscribe to incoming logs
+        this.logStreamService.logs$.subscribe(log => {
+            if (log) {
+                this.liveLogs.update(logs => [...logs, log].slice(-1000)); // Keep last 1000 logs
+                setTimeout(() => {
+                    const container = document.getElementById('liveLogContainer');
+                    if (container) container.scrollTop = container.scrollHeight;
+                }, 50);
+            }
+        });
+    }
+
+    closeLiveLogs() {
+        this.showLiveLogModal.set(false);
+        this.logStreamService.disconnect();
+        this.liveLogs.set([]);
+    }
+
+    startLogStream() {
+        if (!this.containerToLog.trim()) return;
+        this.apiService.queueTask(this.server().id, `STREAM_LOG ${this.containerToLog}`).subscribe();
+    }
+
+    stopLogStream() {
+        if (!this.containerToLog.trim()) return;
+        this.apiService.queueTask(this.server().id, `STOP_LOG ${this.containerToLog}`).subscribe();
     }
 }

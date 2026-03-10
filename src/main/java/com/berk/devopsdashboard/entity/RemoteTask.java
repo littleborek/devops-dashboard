@@ -28,6 +28,9 @@ public class RemoteTask {
     @Column(columnDefinition = "TEXT")
     private String result;
 
+    @Column(columnDefinition = "TEXT")
+    private String signature;
+
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 

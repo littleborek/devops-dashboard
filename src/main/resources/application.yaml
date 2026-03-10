@@ -1,5 +1,15 @@
 server:
   port: 15000
+  ssl:
+    enabled: true
+    key-store: classpath:certs/server.p12
+    key-store-password: ai-ops-password
+    key-store-type: PKCS12
+    key-alias: server
+    trust-store: classpath:certs/truststore.p12
+    trust-store-password: ai-ops-password
+    trust-store-type: PKCS12
+    client-auth: need
 
 spring:
   application:

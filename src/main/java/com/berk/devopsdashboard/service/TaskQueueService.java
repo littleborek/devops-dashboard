@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,68 +18,82 @@ import java.util.stream.Collectors;
 @Slf4j
 public class TaskQueueService {
 
-    private final RemoteTaskRepository remoteTaskRepository;
-    private final ServerRepository serverRepository;
+        private final RemoteTaskRepository remoteTaskRepository;
+        private final ServerRepository serverRepository;
+        private final CommandSigningService signingService;
+        private final AuditLogService auditLogService;
 
-    @Transactional(readOnly = true)
-    public List<TaskDTO> getPendingTasksForServer(Long serverId, String clientIp) {
-        Server server = serverRepository.findById(serverId)
-                .orElseThrow(() -> new IllegalArgumentException("Server not found"));
+        @Transactional(readOnly = true)
+        public List<TaskDTO> getPendingTasksForServer(Long serverId, String clientIp) {
+                Server server = serverRepository.findById(serverId)
+                                .orElseThrow(() -> new IllegalArgumentException("Server not found"));
 
-        // Perform IP validation here.
-        if (!server.getIpAddress().equals(clientIp)) {
-            log.warn("Unauthorized task poll from IP {} for Server IP {}", clientIp, server.getIpAddress());
-            throw new SecurityException("IP Address mismatch");
+                // Perform IP validation here.
+                if (!server.getIpAddress().equals(clientIp)) {
+                        log.warn("Unauthorized task poll from IP {} for Server IP {}", clientIp, server.getIpAddress());
+                        throw new SecurityException("IP Address mismatch");
+                }
+
+                List<RemoteTask> tasks = remoteTaskRepository.findByServerAndStatusOrderByCreatedAtAsc(server,
+                                "PENDING");
+                return tasks.stream()
+                                .map(t -> new TaskDTO(t.getId(), t.getCommand(), t.getSignature()))
+                                .collect(Collectors.toList());
         }
 
-        List<RemoteTask> tasks = remoteTaskRepository.findByServerAndStatusOrderByCreatedAtAsc(server, "PENDING");
-        return tasks.stream()
-                .map(t -> new TaskDTO(t.getId(), t.getCommand()))
-                .collect(Collectors.toList());
-    }
+        @Transactional(readOnly = true)
+        public List<TaskDTO> getPendingTasksByIp(String clientIp) {
+                Server server = serverRepository.findByIpAddress(clientIp)
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                                "Server not found for IP: " + clientIp));
 
-    @Transactional(readOnly = true)
-    public List<TaskDTO> getPendingTasksByIp(String clientIp) {
-        Server server = serverRepository.findByIpAddress(clientIp)
-                .orElseThrow(() -> new IllegalArgumentException("Server not found for IP: " + clientIp));
+                List<RemoteTask> tasks = remoteTaskRepository.findByServerAndStatusOrderByCreatedAtAsc(server,
+                                "PENDING");
+                return tasks.stream()
+                                .map(t -> new TaskDTO(t.getId(), t.getCommand(), t.getSignature()))
+                                .collect(Collectors.toList());
+        }
 
-        List<RemoteTask> tasks = remoteTaskRepository.findByServerAndStatusOrderByCreatedAtAsc(server, "PENDING");
-        return tasks.stream()
-                .map(t -> new TaskDTO(t.getId(), t.getCommand()))
-                .collect(Collectors.toList());
-    }
+        @Transactional
+        public void reportTaskResult(Long taskId, String result, String status) {
+                RemoteTask task = remoteTaskRepository.findById(taskId)
+                                .orElseThrow(() -> new IllegalArgumentException("Task not found"));
 
-    @Transactional
-    public void reportTaskResult(Long taskId, String result, String status) {
-        RemoteTask task = remoteTaskRepository.findById(taskId)
-                .orElseThrow(() -> new IllegalArgumentException("Task not found"));
+                task.setResult(result);
+                task.setStatus(status != null ? status.toUpperCase() : "EXECUTED");
+                task.setExecutedAt(LocalDateTime.now());
 
-        task.setResult(result);
-        task.setStatus(status != null ? status.toUpperCase() : "EXECUTED");
-        task.setExecutedAt(LocalDateTime.now());
+                remoteTaskRepository.save(task);
+                log.info("Task {} result updated. Status: {}", taskId, status);
+        }
 
-        remoteTaskRepository.save(task);
-        log.info("Task {} result updated. Status: {}", taskId, status);
-    }
+        @Transactional
+        public Long queueTask(Long serverId, String command) {
+                Server server = serverRepository.findById(serverId)
+                                .orElseThrow(() -> new IllegalArgumentException("Server not found"));
 
-    @Transactional
-    public Long queueTask(Long serverId, String command) {
-        Server server = serverRepository.findById(serverId)
-                .orElseThrow(() -> new IllegalArgumentException("Server not found"));
+                RemoteTask task = new RemoteTask(server, command);
 
-        RemoteTask task = new RemoteTask(server, command);
-        task = remoteTaskRepository.save(task);
-        log.info("Queued task {} for server {}", task.getId(), serverId);
-        return task.getId();
-    }
+                // Sign the command
+                String signature = signingService.sign(command);
+                task.setSignature(signature);
 
-    @Transactional(readOnly = true)
-    public java.util.Map<String, Object> getTaskStatus(Long taskId) {
-        RemoteTask task = remoteTaskRepository.findById(taskId)
-                .orElseThrow(() -> new IllegalArgumentException("Task not found"));
-        return java.util.Map.of(
-                "id", task.getId(),
-                "status", task.getStatus(),
-                "result", task.getResult() != null ? task.getResult() : "");
-    }
+                task = remoteTaskRepository.save(task);
+
+                // Audit the command
+                auditLogService.logCommand(String.valueOf(serverId), command, signature);
+
+                log.info("Queued task {} for server {} with signature", task.getId(), serverId);
+                return task.getId();
+        }
+
+        @Transactional(readOnly = true)
+        public java.util.Map<String, Object> getTaskStatus(Long taskId) {
+                RemoteTask task = remoteTaskRepository.findById(taskId)
+                                .orElseThrow(() -> new IllegalArgumentException("Task not found"));
+                return java.util.Map.of(
+                                "id", task.getId(),
+                                "status", task.getStatus(),
+                                "result", task.getResult() != null ? task.getResult() : "");
+        }
 }

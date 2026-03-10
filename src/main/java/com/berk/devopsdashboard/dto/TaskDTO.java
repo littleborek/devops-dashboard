@@ -10,4 +10,5 @@ import lombok.NoArgsConstructor;
 public class TaskDTO {
     private Long id;
     private String command;
+    private String signature;
 }
