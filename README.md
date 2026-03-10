@@ -52,7 +52,7 @@ Once started, open your browser and go to: **`http://localhost:15000`**
 
 #### 3️⃣ Step 3: Configure mTLS (Browser Certificate)
 Because the dashboard now uses strict **Mutual TLS (mTLS)** for security, your browser must present a valid digital certificate to access the backend API.
-1. Locate the generated certificate file in your project directory: `src/main/resources/certs/client.p12`
+1. Locate the generated certificate file in your project directory: `certs/client.p12`
 2. **Mac (Keychain Access):** Double-click the `client.p12` file to open Keychain Access. Add it to the "login" keychain. When prompted for the password, enter: `ai-ops-password`. Verify the certificate is trusted.
 3. **Windows (Certificate Manager):** Double-click the `client.p12` file to open the Certificate Import Wizard. Install it for the Current User. When prompted for the password, enter: `ai-ops-password`. Let Windows automatically select the certificate store (Personal).
 4. **Chrome/Firefox:** You can also manually import the `.p12` file via Browser Settings -> Privacy and Security -> Security -> Manage Certificates.
@@ -138,14 +138,14 @@ Uygulama hazır olduğunda tarayıcınızdan şu adrese gidin: **`http://localho
 Uygulama artık üst düzey **mTLS (X.509)** güvenliği kullandığı için, tarayıcınızın kendini API'ye tanıtabilmesi amacıyla dijital sertifikaya ihtiyacı vardır. Aksi halde sayfa açılmaz veya API istekleri hata verir. P12 dosyasını işletim sisteminize eklemelisiniz:
 
 **MacOS İçin Kurulum:**
-1. Proje dizinindeki `src/main/resources/certs/client.p12` dosyasına çift tıklayın.
+1. Proje dizinindeki `certs/client.p12` dosyasına çift tıklayın.
 2. Açılan **Anahtar Zinciri Erişimi (Keychain Access)** uygulamasında sertifikayı `giriş (login)` veya `Sistem` zincirine ekleyin.
 3. Sorulduğunda parola olarak `ai-ops-password` yazın.
 4. Yüklenen sertifikaya (genellikle adına *ai-ops-agent* falan diyebilir) çift tıklayın, **Güven (Trust)** sekmesini açın ve "Bu sertifikayı kullanırken:" kısmını **Her Zaman Güven (Always Trust)** yapın.
 5. Tarayıcınızı (Chrome, Safari vs.) **tamamen kapatıp yeniden başlatın**.
 
 **Windows İçin Kurulum:**
-1. Proje dizinindeki `src/main/resources/certs/client.p12` dosyasına çift tıklayın. Sertifika içe aktarma sihirbazı açılır.
+1. Proje dizinindeki `certs/client.p12` dosyasına çift tıklayın. Sertifika içe aktarma sihirbazı açılır.
 2. `Geçerli Kullanıcı (Current User)` seçip İleri deyin.
 3. Parola olarak `ai-ops-password` girin.
 4. Sihirbazın sertifika depolama alanını otomatik seçmesine (Kişisel) izin verin ve aktarımı tamamlayın.
