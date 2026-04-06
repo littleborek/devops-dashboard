@@ -1,7 +1,7 @@
 server:
   port: 15000
   ssl:
-    enabled: true
+    enabled: false
     key-store: classpath:certs/server.p12
     key-store-password: ai-ops-password
     key-store-type: PKCS12

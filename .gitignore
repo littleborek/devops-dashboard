@@ -10,4 +10,4 @@ target/
 *.log
 dashboard-data/
 *.db
-.DS_Store
+.DS_Storeai-service/venv/

@@ -401,6 +401,7 @@ import { AiService, AiConfig } from '../../services/ai.service';
                             <select [(ngModel)]="aiConfig.provider" name="provider" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-[13px] text-gray-200 outline-none focus:border-purple-500 transition-colors shadow-inner">
                                 <option value="CLOUD">Cloud (OpenAI / Claude vs)</option>
                                 <option value="LOCAL">Local (LM Studio / Ollama)</option>
+                                <option value="CREW_AI">CrewAI (Multi-Agent Team)</option>
                             </select>
                         </div>
                         <div>

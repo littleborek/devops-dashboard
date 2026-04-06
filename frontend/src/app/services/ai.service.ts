@@ -3,7 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface AiConfig {
-    provider: 'LOCAL' | 'CLOUD';
+    provider: 'LOCAL' | 'CLOUD' | 'CREW_AI';
     apiKey?: string;
     endpointUrl?: string;
 }
