@@ -1,36 +1,23 @@
 import os
-import json
-import httpx
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from dotenv import load_dotenv
-
-# Load environment variables from .env if present
-load_dotenv()
-
-# langgraph workflow
-from workflow import app_workflow
+from core.schema import AnalyzeRequest, AnalyzeResponse
+from core.config import settings
+from orchestrator.main_graph import app_workflow
 import uvicorn
 
-app = FastAPI()
+app = FastAPI(title="DevOps AI Service")
 
-# LangSmith Configuration
-if os.environ.get("LANGCHAIN_API_KEY"):
+# LangSmith Activation
+if settings.LANGCHAIN_API_KEY:
     os.environ["LANGCHAIN_TRACING_V2"] = "true"
-    os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
-    os.environ["LANGCHAIN_PROJECT"] = os.environ.get("LANGCHAIN_PROJECT", "devops-dashboard-ai")
-    print("DEBUG: LangSmith tracing enabled.")
-else:
-    print("DEBUG: LangSmith API Key not found. Tracing disabled.")
+    os.environ["LANGCHAIN_ENDPOINT"] = settings.LANGCHAIN_ENDPOINT
+    os.environ["LANGCHAIN_API_KEY"] = settings.LANGCHAIN_API_KEY
+    os.environ["LANGCHAIN_PROJECT"] = settings.LANGCHAIN_PROJECT
+    print(f"DEBUG: LangSmith tracing enabled for project: {settings.LANGCHAIN_PROJECT}")
 
-class AnalyzeRequest(BaseModel):
-    query: str = ""
-    context: str = "DevOps Dashboard System Analysis"
-
-@app.post("/api/v1/crew/analyze")
+@app.post("/api/v1/crew/analyze", response_model=AnalyzeResponse)
 async def analyze(request: AnalyzeRequest):
     try:
-        # Execute LangGraph Workflow
         initial_state = {
             "query": request.query,
             "context": request.context,
@@ -39,7 +26,6 @@ async def analyze(request: AnalyzeRequest):
             "next_step": ""
         }
         
-        print(f"DEBUG: Starting LangGraph workflow for: '{request.query}'")
         final_state = await app_workflow.ainvoke(initial_state)
         
         return {
@@ -47,9 +33,8 @@ async def analyze(request: AnalyzeRequest):
             "status": "success",
             "mode": final_state["mode"]
         }
-        
     except Exception as e:
-        print(f"Error executing workflow: {e}")
+        print(f"Workflow Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
