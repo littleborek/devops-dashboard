@@ -1,23 +1,58 @@
 from httpx import AsyncClient
-
 from langgraph.graph import StateGraph, END
 from core.schema import DevOpsState
 from core.config import settings
 from agents.devops_crew import run_crew_analysis
 
-def is_complex_query(query: str) -> bool:
+def get_heuristic_complex(query: str) -> bool:
+    """Fallback heuristic if LLM routing fails."""
     complex_keywords = ["error", "fail", "slow", "offline", "cpu", "ram", "troubleshoot", "fix", "diagnostic", "problem"]
     query_lower = query.lower()
     return any(kw in query_lower for kw in complex_keywords) or len(query.split()) > 4
 
+async def classify_intent(query: str, context: str) -> str:
+    """Uses LLM to classify if a query is SIMPLE or COMPLEX."""
+    async with AsyncClient(timeout=10.0) as client:
+        prompt = f"""
+        Analyze the following DevOps related query and classify it.
+        
+        Context: {context}
+        Query: {query}
+        
+        Classification Rules:
+        - SIMPLE: Basic greetings, general information requests, or simple status checks that don't need deep analysis.
+        - COMPLEX: Error troubleshooting, performance diagnostics, log analysis, or requests for technical solutions.
+        
+        Return ONLY one word: 'SIMPLE' or 'COMPLEX'.
+        """
+        
+        payload = {
+            "model": settings.OPENAI_MODEL_NAME,
+            "messages": [
+                {"role": "system", "content": "You are a routing assistant. Be concise and return only one word."},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.0 # Strict classification
+        }
+        
+        try:
+            response = await client.post(f"{settings.OPENAI_API_BASE}/chat/completions", json=payload)
+            response.raise_for_status()
+            result = response.json()["choices"][0]["message"]["content"].strip().upper()
+            print(f"DEBUG: LLM Router classified as: {result}")
+            return "crew" if "COMPLEX" in result else "direct"
+        except Exception as e:
+            print(f"DEBUG: LLM Router failed ({e}), falling back to heuristic.")
+            return "crew" if get_heuristic_complex(query) else "direct"
+
 async def router_node(state: DevOpsState):
-    if is_complex_query(state['query']):
-        return {"next_step": "crew"}
-    return {"next_step": "direct"}
+    print(f"--- ROUTING QUERY: {state['query']} ---")
+    next_step = await classify_intent(state['query'], state['context'])
+    return {"next_step": next_step}
 
 async def direct_llm_node(state: DevOpsState):
+    print("--- DIRECT LLM NODE ---")
     async with AsyncClient(timeout=30.0) as client:
-
         payload = {
             "model": settings.OPENAI_MODEL_NAME,
             "messages": [
@@ -35,6 +70,7 @@ async def direct_llm_node(state: DevOpsState):
             return {"response": f"Error: {str(e)}", "mode": "error"}
 
 async def crewai_node(state: DevOpsState):
+    print("--- CREWAI NODE ---")
     try:
         result = run_crew_analysis(state['query'], state['context'])
         return {"response": result, "mode": "full-analysis"}
