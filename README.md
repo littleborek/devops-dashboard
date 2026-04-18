@@ -28,18 +28,20 @@ The **"AI-Ops Dashboard"** is a high-performance infrastructure monitoring and d
 ### 🏗️ Architecture
 *   **Frontend (Angular)**: Hosts the Notification Hub, Chat Interface, and stores User API Keys securely.
 *   **Backend (Spring Boot)**: Orchestrates tasks, bridges to Telegram, and packages contexts for AI models.
-*   **AI Service (Python/CrewAI)**: The intelligent core managing autonomous agents for system diagnostics.
+*   **AI Service (Python/LangGraph/CrewAI)**: The intelligent core using **LangGraph** for orchestration and **CrewAI** for autonomous diagnostics.
 *   **Remote Agent (Bash/Python)**: Polls for tasks, executes commands securely, and reports back.
+
 
 ---
 
-### 🧠 AI Engine & Agentic Workflow (Deep Dive)
-Beyond simple LLM prompts, this system utilizes **CrewAI** for an "Agentic" approach to DevOps:
-*   **Context Packaging**: The Spring Boot backend securely packages server heartbeats (CPU, RAM, Disk, Status) and logs into a structured context.
-*   **Autonomous Agency**:
-    *   **Senior DevOps Expert (Agent)**: Given specific goals, it analyzes the context, ignores false positives, and identifies root causes using its "experience" (backstory).
-    *   **Single-Step Optimization**: To ensure maximum speed on local hardware (RTX 40 series / Apple Silicon), the system is optimized to run a specialized expert agent that converts raw metrics into human-friendly diagnosis and executable terminal commands.
-*   **Local Inference**: The system uses the **Llama-3.2-3B Instruct** model via **LM Studio**, ensuring zero data leakage to the cloud and sub-second response times.
+### 🧠 AI Engine & Orchestration (Deep Dive)
+Beyond simple LLM prompts, this system utilizes a **Hybrid Orchestration** approach:
+*   **LangGraph Orchestrator**: Manages the state machine and intelligent routing. Every query is classified as **SIMPLE** (Direct LLM) or **COMPLEX** (CrewAI) to optimize speed and resource usage.
+*   **CrewAI Multi-Agent Team**:
+    *   **System Data Analyst**: Analyzes server heartbeats and logs for anomalies.
+    *   **DevOps Engineer**: Identifies root causes and provides executable terminal commands.
+*   **Local Inference**: Optimized for **Mistral NeMo 12B** or **Llama-3.1-8B** via **LM Studio**, ensuring 100% data privacy.
+
 
 ---
 
@@ -125,13 +127,14 @@ This application uses **Mutual TLS (mTLS)** for enterprise-grade security.
 
 ---
 
-### 🧠 Yapay Zeka Motoru ve Ajan İş Akışı (Detaylı Bakış)
-Bu sistem sadece basit bir YZ isteminden ibaret değildir; DevOps süreçleri için **CrewAI** tabanlı "Ajanlaşmış" (Agentic) bir yaklaşım kullanır:
-*   **Bağlam Paketleme**: Spring Boot backend, sunucu durumlarını (CPU, RAM, Disk v.b.) ve logları güvenli bir şekilde paketleyerek yapılandırılmış bir "bağlam" oluşturur.
-*   **Otonom Ajan Karar Mekanizması**:
-    *   **Kıdemli DevOps Uzmanı (Agent)**: Belirlenen hedefler doğrultusunda, karmaşık loglar arasından kök nedeni bulmak için kendi "geçmişini" (backstory) kullanır.
-    *   **Hız Optimizasyonu**: Yerel donanımlarda (RTX 40 serisi / Apple Silicon) maksimum hız için sistem, ham metrikleri saniyeler içinde insan tarafından okunabilir raporlara ve çalıştırılabilir terminal komutlarına dönüştürecek şekilde optimize edilmiştir.
-*   **Yerel Çıkarım (Local Inference)**: Sistem, **Llama-3.2-3B Instruct** modelini **LM Studio** üzerinden kullanarak verilerinizin bulut yerine tamamen kendi cihazınızda kalmasını sağlar.
+### 🧠 Yapay Zeka Motoru ve Orkestrasyon (Detaylı Bakış)
+Bu sistem sadece basit bir YZ isteminden ibaret değildir; DevOps süreçleri için **LangGraph** ve **CrewAI** tabanlı hibrit bir yaklaşım kullanır:
+*   **LangGraph Orkestratörü**: Akış diyagramını ve zeki yönlendirmeyi yönetir. Her sorgu **SIMPLE** (Hızlı Yanıt) veya **COMPLEX** (Derin Analiz) olarak sınıflandırılarak hız-kaynak dengesi sağlanır.
+*   **CrewAI Çoklu-Ajan Ekibi**:
+    *   **Sistem Veri Analisti**: Sunucu metriklerini ve logları tarayarak anormallikleri bulur.
+    *   **DevOps Mühendisi**: Kök nedenleri belirler ve çalıştırılabilir terminal komutları üretir.
+*   **Yerel Çıkarım (Local Inference)**: **Mistral NeMo 12B** veya **Llama-3.1-8B** modelleriyle **LM Studio** üzerinden %100 veri gizliliği ile çalışır.
+
 
 ---
 
