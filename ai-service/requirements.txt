@@ -1,0 +1,10 @@
+crewai
+fastapi
+uvicorn
+langchain_openai
+httpx
+pydantic
+langgraph
+langsmith
+python-dotenv
+
