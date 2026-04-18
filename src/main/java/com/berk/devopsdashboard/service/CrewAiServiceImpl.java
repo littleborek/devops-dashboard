@@ -1,5 +1,6 @@
 package com.berk.devopsdashboard.service;
 
+import com.berk.devopsdashboard.repository.ServerRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,8 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,20 +24,39 @@ public class CrewAiServiceImpl implements AiService {
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper;
+    private final ServerRepository serverRepository;
 
     @Override
-    public String analyze(String prompt, String apiKey, String endpointUrl) {
+    public String analyze(String prompt, Long serverId, String apiKey, String endpointUrl) {
+        // Gathering server data to create a rich context
+        StringBuilder systemContext = new StringBuilder("Current System Status:\n");
+        
+        if (serverId != null) {
+            // Include only the relevant server in context
+            serverRepository.findById(serverId).ifPresent(s -> {
+                systemContext.append(String.format("- Server: %s, Status: %s, CPU: %s%%, RAM: %s%%, OS: %s\n",
+                        s.getName(), s.getStatus(), s.getCpuUsage(), s.getRamUsage(), s.getOperatingSystem()));
+            });
+        } else {
+            // Include all servers for general context
+            serverRepository.findAll().forEach(s -> {
+                systemContext.append(String.format("- Server: %s, Status: %s, CPU: %s%%, RAM: %s%%, OS: %s\n",
+                        s.getName(), s.getStatus(), s.getCpuUsage(), s.getRamUsage(), s.getOperatingSystem()));
+            });
+        }
+        
         // Varsayılan CrewAI Python Servis adresi (Lokal 8000 portu)
         if (endpointUrl == null || endpointUrl.isEmpty() || endpointUrl.contains(":1234")) {
             endpointUrl = "http://localhost:8000/api/v1/crew/analyze";
         }
+// ... rest of the method
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("query", prompt);
-        requestBody.put("context", "DevOps Dashboard Sistem Analizi");
+        requestBody.put("context", systemContext.toString());
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
@@ -61,9 +83,11 @@ public class CrewAiServiceImpl implements AiService {
     }
 
     @Override
-    public Flux<String> analyzeStream(String prompt, String apiKey, String endpointUrl) {
+    public Flux<String> analyzeStream(String prompt, Long serverId, String apiKey, String endpointUrl) {
         // CrewAI ajanları arası müzakere sürerken stream yapması kompleks bir konu.
         // Şimdilik final sonucu tek seferde dönüyoruz.
-        return Flux.just(analyze(prompt, apiKey, endpointUrl));
+        return Mono.fromCallable(() -> analyze(prompt, serverId, apiKey, endpointUrl))
+                   .subscribeOn(Schedulers.boundedElastic())
+                   .flux();
     }
 }

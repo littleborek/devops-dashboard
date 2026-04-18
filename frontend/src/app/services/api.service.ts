@@ -44,6 +44,10 @@ export class ApiService {
     return this.http.delete<void>(`${this.baseUrl}/servers/${id}`);
   }
 
+  updateServer(id: number, server: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/servers/${id}`, server);
+  }
+
   getDockerContainers(serverId: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/servers/${serverId}/containers`);
   }

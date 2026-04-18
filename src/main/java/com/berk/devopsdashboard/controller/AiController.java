@@ -45,7 +45,7 @@ public class AiController {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Unknown Provider Type: " + provider));
 
-        String analysis = aiService.analyze(prompt, apiKey, endpointUrl);
+        String analysis = aiService.analyze(prompt, serverId, apiKey, endpointUrl);
         return ResponseEntity.ok(Map.of("analysis", analysis));
     }
 

@@ -133,7 +133,7 @@ import { AiService, AiConfig } from '../../services/ai.service';
                                     <button class="p-2 rounded hover:bg-gray-700 transition" title="Bakım Modu">
                                         <i class="fa-solid" [ngClass]="server.maintenanceMode ? 'fa-pause-circle text-yellow-500' : 'fa-wrench text-gray-500'"></i>
                                     </button>
-                                    <button class="p-2 rounded hover:bg-gray-700 text-blue-400 transition" title="Düzenle">
+                                    <button (click)="openEditModal(server)" class="p-2 rounded hover:bg-gray-700 text-blue-400 transition" title="Düzenle">
                                         <i class="fa-solid fa-pen"></i>
                                     </button>
                                     <button (click)="onDeleteServer(server.id)" class="p-2 rounded hover:bg-gray-700 text-red-400 transition" title="Sil">
@@ -257,6 +257,49 @@ import { AiService, AiConfig } from '../../services/ai.service';
                     </label>
                 </div>
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition">Sunucu Ekle</button>
+            </form>
+        </div>
+    </div>
+    }
+
+    <!-- SUNUCU DÜZENLE MODAL -->
+    @if (showEditModal()) {
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 fade-in" (click)="showEditModal.set(false)">
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl max-w-lg w-full" (click)="$event.stopPropagation()">
+            <div class="flex justify-between items-center p-6 border-b border-gray-700">
+                <h2 class="text-xl font-bold text-blue-400"><i class="fa-solid fa-pen mr-2"></i>Sunucu Düzenle</h2>
+                <button (click)="showEditModal.set(false)" class="text-gray-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form (ngSubmit)="updateServer()" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-gray-400 font-semibold mb-1">Sunucu Adı *</label>
+                    <input type="text" [(ngModel)]="editingServer.name" name="editName" required class="w-full bg-gray-900/50 border border-gray-700 rounded-lg py-2 px-3 text-gray-100 outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-gray-400 font-semibold mb-1">IP Adresi *</label>
+                    <input type="text" [(ngModel)]="editingServer.ipAddress" name="editIpAddress" required class="w-full bg-gray-900/50 border border-gray-700 rounded-lg py-2 px-3 text-gray-100 outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider text-gray-400 font-semibold mb-1">İşletim Sistemi *</label>
+                        <input type="text" [(ngModel)]="editingServer.operatingSystem" name="editOs" required class="w-full bg-gray-900/50 border border-gray-700 rounded-lg py-2 px-3 text-gray-100 outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider text-gray-400 font-semibold mb-1">Kategori</label>
+                        <input type="text" [(ngModel)]="editingServer.category" name="editCategory" class="w-full bg-gray-900/50 border border-gray-700 rounded-lg py-2 px-3 text-gray-100 outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-gray-400 font-semibold mb-1">Konum</label>
+                    <input type="text" [(ngModel)]="editingServer.location" name="editLocation" class="w-full bg-gray-900/50 border border-gray-700 rounded-lg py-2 px-3 text-gray-100 outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex items-center space-x-4">
+                    <label class="flex items-center space-x-2 text-sm text-gray-300">
+                        <input type="checkbox" [(ngModel)]="editingServer.skipSslCheck" name="editSkipSsl" class="rounded">
+                        <span>SSL Kontrolünü Atla</span>
+                    </label>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition">Değişiklikleri Kaydet</button>
             </form>
         </div>
     </div>
@@ -463,10 +506,12 @@ export class DashboardComponent implements OnInit {
     k8sPods = signal<any[]>([]);
     showSetupModal = signal(false);
     showNewServerModal = signal(false);
+    showEditModal = signal(false);
     showSettingsModal = signal(false);
     copySuccess = signal(false);
     uninstallCmd = 'sudo crontab -l | grep -v "devops_agent.sh" | sudo crontab - && sudo rm -f /usr/local/bin/devops_agent.sh /tmp/devops_agent.sh';
     newServer: any = { name: '', ipAddress: '', operatingSystem: 'linux', location: '', category: '', skipSslCheck: false };
+    editingServer: any = { id: 0, name: '', ipAddress: '', operatingSystem: '', location: '', category: '', skipSslCheck: false };
 
     private aiService = inject(AiService);
     aiConfig: AiConfig = { provider: 'CLOUD' };
@@ -576,6 +621,21 @@ export class DashboardComponent implements OnInit {
                 this.loadServers();
             },
             error: (err: any) => alert('Hata: ' + (err.error?.message || 'Sunucu eklenemedi'))
+        });
+    }
+
+    openEditModal(server: any) {
+        this.editingServer = { ...server };
+        this.showEditModal.set(true);
+    }
+
+    updateServer() {
+        this.apiService.updateServer(this.editingServer.id, this.editingServer).subscribe({
+            next: () => {
+                this.showEditModal.set(false);
+                this.loadServers();
+            },
+            error: (err: any) => alert('Hata: ' + (err.error?.message || 'Sunucu güncellenemedi'))
         });
     }
 

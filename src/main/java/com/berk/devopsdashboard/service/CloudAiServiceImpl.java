@@ -27,7 +27,7 @@ public class CloudAiServiceImpl implements AiService {
     private final WebClient webClient = WebClient.builder().build();
 
     @Override
-    public String analyze(String prompt, String apiKey, String endpointUrl) {
+    public String analyze(String prompt, Long serverId, String apiKey, String endpointUrl) {
         if (endpointUrl == null || endpointUrl.isEmpty()) {
             endpointUrl = "https://api.openai.com/v1/chat/completions";
         } else if (endpointUrl.endsWith("/v1") || endpointUrl.endsWith("/v1/")) {
@@ -77,7 +77,7 @@ public class CloudAiServiceImpl implements AiService {
     }
 
     @Override
-    public Flux<String> analyzeStream(String prompt, String apiKey, String endpointUrl) {
+    public Flux<String> analyzeStream(String prompt, Long serverId, String apiKey, String endpointUrl) {
         if (endpointUrl == null || endpointUrl.isEmpty()) {
             endpointUrl = "https://api.openai.com/v1/chat/completions";
         } else if (endpointUrl.endsWith("/v1") || endpointUrl.endsWith("/v1/")) {

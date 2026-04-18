@@ -90,9 +90,14 @@ export class AiService {
             // Reconstruct potentially fragmented SSE frames
             const lines = decoded.split('\n');
             for (const line of lines) {
-                if (line.startsWith('data:')) {
-                    const data = line.replace('data:', '');
-                    yield data;
+                const trimmedLine = line.trim();
+                if (!trimmedLine) continue;
+
+                if (trimmedLine.startsWith('data:')) {
+                    yield trimmedLine.replace('data:', '').trim();
+                } else {
+                    // If it's not standard SSE format but we got text, yield it anyway
+                    yield trimmedLine;
                 }
             }
         }
