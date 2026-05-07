@@ -12,4 +12,8 @@ dashboard-data/
 *.db
 .DS_Store
 ai-service/venv/
+venv311/
+*.log
+__pycache__/
+.env
 

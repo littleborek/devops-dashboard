@@ -1,13 +1,21 @@
 import os
 from crewai import Agent, Task, Crew, Process
+from langchain_openai import ChatOpenAI
 from core.config import settings
 
-# Explicitly set environment variables for CrewAI's internal LangChain calls
+# Shared LLM Configuration via Environment Variables
 os.environ["OPENAI_API_BASE"] = settings.OPENAI_API_BASE
 os.environ["OPENAI_API_KEY"] = settings.OPENAI_API_KEY
 os.environ["OPENAI_MODEL_NAME"] = settings.OPENAI_MODEL_NAME
+os.environ["OPENAI_TIMEOUT"] = "300" 
+
 
 # 1. Agents
+llm_model = settings.OPENAI_MODEL_NAME
+# Ensure it has a provider prefix for LiteLLM
+if "/" not in llm_model:
+    llm_model = f"openai/{llm_model}"
+
 system_analyst = Agent(
     role='System Data Analyst',
     goal='Extract specific metrics or identify technical issues requested by the user.',
@@ -15,7 +23,8 @@ system_analyst = Agent(
     and extract only what is relevant to the user query. You avoid fluff and 
     focus on accuracy.""",
     verbose=True,
-    allow_delegation=False
+    allow_delegation=False,
+    llm=llm_model
 )
 
 devops_engineer = Agent(
@@ -24,7 +33,8 @@ devops_engineer = Agent(
     backstory="""You are an expert communicator and problem solver. 
     Your first priority is to answer the user's question directly.""",
     verbose=True,
-    allow_delegation=False
+    allow_delegation=False,
+    llm=llm_model
 )
 
 # 2. Tasks Generator

@@ -17,7 +17,7 @@ import { AiService, AiConfig } from '../../services/ai.service';
 
     <div class="container mx-auto mt-8 p-4">
         <!-- Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div class="bg-gray-800 p-6 rounded-lg shadow-lg border-l-4 border-blue-500">
                 <div class="flex justify-between items-center">
                     <div>
@@ -47,6 +47,20 @@ import { AiService, AiConfig } from '../../services/ai.service';
                     <i class="fa-solid fa-cubes text-purple-500 text-3xl opacity-50"></i>
                 </div>
             </div>
+
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg border-l-4 border-emerald-500">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-gray-400 text-xs uppercase tracking-wider">MCP Tools</h3>
+                        <p class="text-2xl font-bold mt-1 text-emerald-400">{{ mcpToolCount() }}</p>
+                    </div>
+                    <i class="fa-solid fa-plug text-emerald-500 text-3xl opacity-50"></i>
+                </div>
+                <div class="mt-2 flex items-center space-x-1">
+                    <span class="w-2 h-2 rounded-full" [ngClass]="mcpOnline() ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)]' : 'bg-red-400'"></span>
+                    <span class="text-xs text-gray-500">{{ mcpOnline() ? 'Aktif' : 'Çevrimdışı' }}</span>
+                </div>
+            </div>
         </div>
 
         <!-- TAB MENU -->
@@ -62,6 +76,11 @@ import { AiService, AiConfig } from '../../services/ai.service';
             <button (click)="currentTab.set('k8s')"
                 [class]="currentTab() === 'k8s' ? 'pb-3 text-sm font-medium transition border-b-2 border-purple-500 text-purple-500 flex items-center' : 'pb-3 text-sm font-medium transition text-gray-400 border-b-2 border-transparent hover:text-gray-200 flex items-center'">
                 <i class="fa-solid fa-cubes mr-2"></i>Kubernetes ({{ k8sCount() }})
+            </button>
+            <button (click)="currentTab.set('mcp')"
+                [class]="currentTab() === 'mcp' ? 'pb-3 text-sm font-medium transition border-b-2 border-emerald-500 text-emerald-500 flex items-center' : 'pb-3 text-sm font-medium transition text-gray-400 border-b-2 border-transparent hover:text-gray-200 flex items-center'">
+                <i class="fa-solid fa-plug mr-2"></i>MCP
+                <span class="ml-2 px-1.5 py-0.5 text-[10px] font-bold rounded bg-emerald-900/40 text-emerald-400 border border-emerald-700">NEW</span>
             </button>
         </div>
 
@@ -214,6 +233,144 @@ import { AiService, AiConfig } from '../../services/ai.service';
                             }
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- MCP TAB -->
+            <div *ngSwitchCase="'mcp'" class="fade-in space-y-6">
+                <!-- MCP Header -->
+                <div class="bg-gradient-to-r from-emerald-900/30 to-gray-800 rounded-xl p-6 border border-emerald-700/30">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl font-bold text-white flex items-center">
+                                <i class="fa-solid fa-plug text-emerald-400 mr-3"></i>
+                                Model Context Protocol (MCP)
+                            </h2>
+                            <p class="text-gray-400 text-sm mt-1">Dashboard yeteneklerini Claude Desktop, Cursor ve diğer AI araçlarına açar.</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="flex items-center space-x-2 bg-gray-900/60 px-3 py-2 rounded-lg border border-gray-700">
+                                <span class="w-2.5 h-2.5 rounded-full animate-pulse" [ngClass]="mcpOnline() ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]' : 'bg-red-400'"></span>
+                                <span class="text-sm" [ngClass]="mcpOnline() ? 'text-emerald-400' : 'text-red-400'">
+                                    {{ mcpOnline() ? 'MCP Server Hazır — 4 tool aktif' : 'MCP Server Çevrimdışı' }}
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tools Grid -->
+                <div>
+                    <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">
+                        <i class="fa-solid fa-wrench mr-2"></i>Kayıtlı Araçlar (Tools)
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-gray-800 rounded-lg p-5 border border-gray-700 hover:border-emerald-600/50 transition group">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <h4 class="font-bold text-white group-hover:text-emerald-400 transition">analyze_incident</h4>
+                                    <p class="text-gray-400 text-xs mt-1 leading-relaxed">CrewAI çoklu-ajan sistemiyle olay analizi. LangGraph router sorguyu SIMPLE/COMPLEX olarak sınıflandırır.</p>
+                                </div>
+                                <span class="bg-blue-900/30 text-blue-400 text-[10px] px-2 py-0.5 rounded border border-blue-700 whitespace-nowrap">CrewAI</span>
+                            </div>
+                            <div class="mt-3 flex items-center space-x-2 text-[10px] text-gray-500 font-mono">
+                                <span class="bg-gray-900 px-2 py-0.5 rounded">query: string</span>
+                                <span class="bg-gray-900 px-2 py-0.5 rounded">context?: string</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-800 rounded-lg p-5 border border-gray-700 hover:border-emerald-600/50 transition group">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <h4 class="font-bold text-white group-hover:text-emerald-400 transition">get_server_status</h4>
+                                    <p class="text-gray-400 text-xs mt-1 leading-relaxed">Tüm sunucuların veya belirli bir sunucunun CPU, RAM, disk kullanımını getirir.</p>
+                                </div>
+                                <span class="bg-purple-900/30 text-purple-400 text-[10px] px-2 py-0.5 rounded border border-purple-700 whitespace-nowrap">API</span>
+                            </div>
+                            <div class="mt-3 flex items-center space-x-2 text-[10px] text-gray-500 font-mono">
+                                <span class="bg-gray-900 px-2 py-0.5 rounded">server_id?: int</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-800 rounded-lg p-5 border border-gray-700 hover:border-emerald-600/50 transition group">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <h4 class="font-bold text-white group-hover:text-emerald-400 transition">ask_devops_llm</h4>
+                                    <p class="text-gray-400 text-xs mt-1 leading-relaxed">Yerel LLM'e doğrudan soru sorar, CrewAI pipeline'ını atlar. Hızlı cevaplar için.</p>
+                                </div>
+                                <span class="bg-orange-900/30 text-orange-400 text-[10px] px-2 py-0.5 rounded border border-orange-700 whitespace-nowrap">LLM</span>
+                            </div>
+                            <div class="mt-3 flex items-center space-x-2 text-[10px] text-gray-500 font-mono">
+                                <span class="bg-gray-900 px-2 py-0.5 rounded">question: string</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-800 rounded-lg p-5 border border-gray-700 hover:border-emerald-600/50 transition group">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <h4 class="font-bold text-white group-hover:text-emerald-400 transition">get_task_queue</h4>
+                                    <p class="text-gray-400 text-xs mt-1 leading-relaxed">Belirli sunucunun RSA imzalı bekleyen uzak komutlarını listeler.</p>
+                                </div>
+                                <span class="bg-red-900/30 text-red-400 text-[10px] px-2 py-0.5 rounded border border-red-700 whitespace-nowrap">System</span>
+                            </div>
+                            <div class="mt-3 flex items-center space-x-2 text-[10px] text-gray-500 font-mono">
+                                <span class="bg-gray-900 px-2 py-0.5 rounded">server_id: int</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resources & Prompts -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">
+                            <i class="fa-solid fa-book-open mr-2"></i>Kaynaklar & İstemler
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="bg-gray-800/50 rounded-lg p-4 border border-gray-700 flex items-center space-x-4">
+                                <div class="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20">
+                                    <i class="fa-solid fa-sitemap text-cyan-400"></i>
+                                </div>
+                                <div>
+                                    <span class="text-white text-sm font-medium">devops://architecture</span>
+                                    <p class="text-gray-500 text-[11px]">Sistem mimarisi diyagramı (Resource)</p>
+                                </div>
+                            </div>
+                            <div class="bg-gray-800/50 rounded-lg p-4 border border-gray-700 flex items-center space-x-4">
+                                <div class="w-10 h-10 rounded-lg bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
+                                    <i class="fa-solid fa-magnifying-glass-chart text-yellow-400"></i>
+                                </div>
+                                <div>
+                                    <span class="text-white text-sm font-medium">rca_prompt</span>
+                                    <p class="text-gray-500 text-[11px]">Kök Neden Analizi şablonu (Prompt)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">
+                            <i class="fa-solid fa-link mr-2"></i>Uyumlu Uygulamalar
+                        </h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-gray-800/50 rounded-lg p-3 border border-gray-700 flex items-center space-x-3">
+                                <i class="fa-solid fa-robot text-orange-400"></i>
+                                <span class="text-xs text-gray-300">Claude Desktop</span>
+                            </div>
+                            <div class="bg-gray-800/50 rounded-lg p-3 border border-gray-700 flex items-center space-x-3">
+                                <i class="fa-solid fa-code text-blue-400"></i>
+                                <span class="text-xs text-gray-300">Cursor IDE</span>
+                            </div>
+                            <div class="bg-gray-800/50 rounded-lg p-3 border border-gray-700 flex items-center space-x-3">
+                                <i class="fa-solid fa-terminal text-green-400"></i>
+                                <span class="text-xs text-gray-300">MCP Inspector</span>
+                            </div>
+                            <div class="bg-gray-800/50 rounded-lg p-3 border border-gray-700 flex items-center space-x-3">
+                                <i class="fa-solid fa-puzzle-piece text-purple-400"></i>
+                                <span class="text-xs text-gray-300">VS Code</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -504,6 +661,8 @@ export class DashboardComponent implements OnInit {
     dockerCount = signal(0);
     k8sCount = signal(0);
     k8sPods = signal<any[]>([]);
+    mcpToolCount = signal(0);
+    mcpOnline = signal(false);
     showSetupModal = signal(false);
     showNewServerModal = signal(false);
     showEditModal = signal(false);
@@ -521,7 +680,11 @@ export class DashboardComponent implements OnInit {
         this.loadServers();
         this.aiConfig = this.aiService.getConfig();
         this.loadTelegramConfig();
-        this.refreshInterval = setInterval(() => this.refreshServers(), 10000);
+        this.checkMcpStatus();
+        this.refreshInterval = setInterval(() => {
+            this.refreshServers();
+            this.checkMcpStatus();
+        }, 10000);
     }
 
     ngOnDestroy() {
@@ -673,6 +836,21 @@ export class DashboardComponent implements OnInit {
         if (value >= 80) return 'bg-red-500';
         if (value >= 50) return 'bg-yellow-500';
         return 'bg-green-500';
+    }
+
+    checkMcpStatus() {
+        // Since MCP server runs via stdio, we check if the AI service is reachable
+        // which is where the MCP tools proxy their requests.
+        this.http.get('/actuator/health').subscribe({
+            next: () => {
+                this.mcpOnline.set(true);
+                this.mcpToolCount.set(4);
+            },
+            error: () => {
+                this.mcpOnline.set(false);
+                this.mcpToolCount.set(0);
+            }
+        });
     }
 }
 

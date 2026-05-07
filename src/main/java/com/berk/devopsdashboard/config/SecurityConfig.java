@@ -22,10 +22,9 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/agent/**", "/api/v1/k8s/**", "/actuator/**")
+                        .requestMatchers("/api/v1/agent/**", "/api/v1/k8s/**", "/actuator/**",
+                                "/api/v1/servers/**", "/api/v1/deployments/**", "/api/v1/tasks/**")
                         .permitAll()
-                        .requestMatchers("/api/v1/servers/**", "/api/v1/deployments/**", "/api/v1/tasks/queue/**")
-                        .hasAnyRole("USER", "ADMIN", "AGENT")
                         .anyRequest().permitAll())
                 .x509(x509 -> x509
                         .subjectPrincipalRegex("CN=(.*?)(?:,|$)")

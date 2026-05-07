@@ -6,8 +6,8 @@ load_dotenv()
 
 class Settings:
     # LLM Configuration
-    OPENAI_API_BASE = os.environ.get("OPENAI_API_BASE", "http://100.119.208.36:1234/v1")
-    OPENAI_MODEL_NAME = os.environ.get("OPENAI_MODEL_NAME", "mistralai-mistral-nemo-instruct-2407-12b-mpoa-v1")
+    OPENAI_API_BASE = os.environ.get("OPENAI_API_BASE", "http://100.95.111.63:1234/v1")
+    OPENAI_MODEL_NAME = os.environ.get("OPENAI_MODEL_NAME", "openai/mistralai/mistral-nemo-instruct-2407")
     OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "lm-studio")
 
     

@@ -4,6 +4,13 @@ from core.schema import DevOpsState
 from core.config import settings
 from agents.devops_crew import run_crew_analysis
 
+def get_raw_model_name(name: str) -> str:
+    """Strips provider prefix (e.g., 'openai/') for raw API calls to LM Studio."""
+    if name.startswith("openai/"):
+        return name.replace("openai/", "", 1)
+    return name
+
+
 def get_heuristic_complex(query: str) -> bool:
     """Fallback heuristic if LLM routing fails."""
     complex_keywords = ["error", "fail", "slow", "offline", "cpu", "ram", "troubleshoot", "fix", "diagnostic", "problem"]
@@ -12,7 +19,7 @@ def get_heuristic_complex(query: str) -> bool:
 
 async def classify_intent(query: str, context: str) -> str:
     """Uses LLM to classify if a query is SIMPLE or COMPLEX."""
-    async with AsyncClient(timeout=10.0) as client:
+    async with AsyncClient(timeout=60.0) as client:
         prompt = f"""
         Analyze the following DevOps related query and classify it.
         
@@ -27,7 +34,7 @@ async def classify_intent(query: str, context: str) -> str:
         """
         
         payload = {
-            "model": settings.OPENAI_MODEL_NAME,
+            "model": get_raw_model_name(settings.OPENAI_MODEL_NAME),
             "messages": [
                 {"role": "system", "content": "You are a routing assistant. Be concise and return only one word."},
                 {"role": "user", "content": prompt}
@@ -52,9 +59,9 @@ async def router_node(state: DevOpsState):
 
 async def direct_llm_node(state: DevOpsState):
     print("--- DIRECT LLM NODE ---")
-    async with AsyncClient(timeout=30.0) as client:
+    async with AsyncClient(timeout=120.0) as client:
         payload = {
-            "model": settings.OPENAI_MODEL_NAME,
+            "model": get_raw_model_name(settings.OPENAI_MODEL_NAME),
             "messages": [
                 {"role": "system", "content": f"You are a helpful DevOps assistant. Context: {state['context']}. Give a DIRECT, concise answer."},
                 {"role": "user", "content": state['query']}
