@@ -1,19 +1,51 @@
-HELP.md
+# Java & Maven
 target/
 !.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
 .classpath
 .project
 .settings/
 .idea/
 *.iml
+
+# Python
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+venv/
+venv311/
+ai-service/venv/
+.venv/
+
+# Node & Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+.angular/
+
+# Certificates & Keys (Security)
+certs/
+*.p12
+*.crt
+*.key
+*.pem
+
+# Environment & Secret files
+.env
+**/.env
+*.env.local
+
+# Logs & Database
 *.log
 dashboard-data/
 *.db
+
+# OS Generated
 .DS_Store
-ai-service/venv/
-venv311/
-*.log
-__pycache__/
-.env
+**/.DS_Store
+Thumbs.db
+
+# Misc
+HELP.md
+
 
