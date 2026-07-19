@@ -94,7 +94,12 @@ cd ..
 docker-compose up -d --build
 ```
 
-> ⚠️ **Important**: Always use `npm run build:deploy` instead of `npm run build` when deploying to Docker. This ensures the compiled JS is copied to `src/main/resources/static/` before Maven packages the jar.
+#### 4️⃣ Install Remote Agent on Target Servers
+To monitor remote Linux/Docker servers (e.g. CasaOS, AWS EC2, Raspberry Pi):
+```bash
+curl -s http://<DASHBOARD_IP>:15000/api/v1/agent/script | sudo bash
+```
+> ⚠️ **Note**: Make sure to pipe to `sudo bash` so the agent script has permission to inspect Docker containers via `/var/run/docker.sock`.
 
 ---
 
@@ -230,7 +235,12 @@ cd ..
 docker-compose up -d --build
 ```
 
-> ⚠️ **Önemli**: Docker'a deploy ederken `npm run build` yerine `npm run build:deploy` kullanın. Bu komut derlenen JS dosyalarını `src/main/resources/static/` klasörüne otomatik kopyalar.
+#### 4️⃣ Uzak Sunuculara Ajan Kurulumu
+Uzak Linux/Docker sunucularını (CasaOS, AWS EC2, Raspberry Pi vb.) izlemek için hedef sunucu terminalinde:
+```bash
+curl -s http://<DASHBOARD_IP>:15000/api/v1/agent/script | sudo bash
+```
+> ⚠️ **Not**: Komutun sonundaki `sudo bash` kullanımı önemlidir; böylece ajan `/var/run/docker.sock` üzerindeki tüm Docker konteynerlerini (OpenWebUI vb.) okuma yetkisine sahip olur.
 
 ---
 
