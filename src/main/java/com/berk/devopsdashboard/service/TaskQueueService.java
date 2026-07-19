@@ -43,10 +43,12 @@ public class TaskQueueService {
 
         @Transactional(readOnly = true)
         public List<TaskDTO> getPendingTasksByIp(String clientIp) {
-                Server server = serverRepository.findByIpAddress(clientIp)
-                                .orElseThrow(() -> new IllegalArgumentException(
-                                                "Server not found for IP: " + clientIp));
+                java.util.Optional<Server> serverOpt = serverRepository.findByIpAddress(clientIp);
+                if (serverOpt.isEmpty()) {
+                        return java.util.Collections.emptyList();
+                }
 
+                Server server = serverOpt.get();
                 List<RemoteTask> tasks = remoteTaskRepository.findByServerAndStatusOrderByCreatedAtAsc(server,
                                 "PENDING");
                 return tasks.stream()
