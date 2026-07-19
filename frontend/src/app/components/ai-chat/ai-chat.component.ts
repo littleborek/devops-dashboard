@@ -54,7 +54,7 @@ import { AiService } from '../../services/ai.service';
                <i class="fa-solid fa-robot" *ngIf="msg.role === 'ai'"></i>
               {{ msg.role === 'user' ? 'sysadmin' : 'ai-core' }}
             </span>
-            <div class="chat-html break-words" [innerHTML]="formatMessage(msg.content)"></div>
+            <div class="chat-html break-words whitespace-pre-wrap" [innerHTML]="formatMessage(msg.content)"></div>
           </div>
         </div>
         
