@@ -93,11 +93,10 @@ export class AiService {
                 const trimmedLine = line.trim();
                 if (!trimmedLine) continue;
 
-                if (trimmedLine.startsWith('data:')) {
-                    yield trimmedLine.replace('data:', '').trim();
-                } else {
-                    // If it's not standard SSE format but we got text, yield it anyway
-                    yield trimmedLine;
+                if (line.startsWith('data:')) {
+                    yield line.slice(5);
+                } else if (line.length > 0) {
+                    yield line;
                 }
             }
         }

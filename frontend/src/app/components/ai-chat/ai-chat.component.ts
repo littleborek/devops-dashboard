@@ -169,7 +169,9 @@ export class AiChatComponent implements AfterViewChecked {
 
   formatMessage(content: string): string {
     if (!content) return '';
-    let t = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/`(.*?)`/g, '<code>$1</code>');
-    return t.split('\n').map(l => l.trim() ? `<p>${l}</p>` : '').join('');
+    let t = content
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/`(.*?)`/g, '<code>$1</code>');
+    return t.replace(/\n/g, '<br>');
   }
 }

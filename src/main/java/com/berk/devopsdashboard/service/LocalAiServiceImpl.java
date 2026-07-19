@@ -26,14 +26,51 @@ public class LocalAiServiceImpl implements AiService {
     private final ObjectMapper objectMapper;
     private final WebClient webClient = WebClient.builder().build();
 
+    private String resolveEndpoint(String endpointUrl) {
+        if (endpointUrl == null || endpointUrl.trim().isEmpty()) {
+            String envEndpoint = System.getenv("LOCAL_AI_ENDPOINT");
+            if (envEndpoint != null && !envEndpoint.trim().isEmpty()) {
+                endpointUrl = envEndpoint;
+            } else {
+                return "http://host.docker.internal:1234/v1/chat/completions";
+            }
+        }
+        
+        String url = endpointUrl.trim();
+        
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "http://" + url;
+        }
+        
+        if (!url.matches(".*:\\d+.*") && !url.contains("/v1")) {
+            url = url + ":1234";
+        }
+        
+        url = url.replaceAll("/+$", "");
+        
+        if (!url.endsWith("/v1/chat/completions")) {
+            if (url.endsWith("/v1")) {
+                url = url + "/chat/completions";
+            } else {
+                url = url + "/v1/chat/completions";
+            }
+        }
+        
+        return url;
+    }
+
+    private String getModelName() {
+        String envModel = System.getenv("OPENAI_MODEL_NAME");
+        if (envModel != null && !envModel.trim().isEmpty()) {
+            return envModel.replace("openai/", "");
+        }
+        return "mistralai/mistral-nemo-instruct-2407";
+    }
+
     @Override
     public String analyze(String prompt, Long serverId, String apiKey, String endpointUrl) {
-        if (endpointUrl == null || endpointUrl.isEmpty()) {
-            endpointUrl = "http://localhost:1234/v1/chat/completions"; // Default LM Studio port
-        } else if (endpointUrl.endsWith("/v1") || endpointUrl.endsWith("/v1/")) {
-            endpointUrl = endpointUrl.endsWith("/") ? endpointUrl + "chat/completions"
-                    : endpointUrl + "/chat/completions";
-        }
+        String targetUrl = resolveEndpoint(endpointUrl);
+        log.info("Local AI Endpoint: {}", targetUrl);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -42,7 +79,7 @@ public class LocalAiServiceImpl implements AiService {
         }
 
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", "local-model");
+        requestBody.put("model", getModelName());
         requestBody.put("temperature", 0.7);
         requestBody.put("messages", List.of(
                 Map.of("role", "system", "content", "You are an expert DevOps AI assistant."),
@@ -51,7 +88,7 @@ public class LocalAiServiceImpl implements AiService {
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
         try {
-            String response = restTemplate.postForObject(endpointUrl, request, String.class);
+            String response = restTemplate.postForObject(targetUrl, request, String.class);
             JsonNode root = objectMapper.readTree(response);
             JsonNode choices = root.path("choices");
             if (choices.isArray() && choices.size() > 0) {
@@ -68,7 +105,7 @@ public class LocalAiServiceImpl implements AiService {
             log.error("Local AI HTTP error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
             return "HTTP Error (" + e.getStatusCode() + "): " + e.getResponseBodyAsString();
         } catch (Exception e) {
-            log.error("Local AI request failed. Ensure LM Studio is running at {}: {}", endpointUrl, e.getMessage());
+            log.error("Local AI request failed. Target: {}: {}", targetUrl, e.getMessage());
             return "Error analyzing with Local AI: " + e.getMessage();
         }
     }
@@ -80,15 +117,11 @@ public class LocalAiServiceImpl implements AiService {
 
     @Override
     public Flux<String> analyzeStream(String prompt, Long serverId, String apiKey, String endpointUrl) {
-        if (endpointUrl == null || endpointUrl.isEmpty()) {
-            endpointUrl = "http://localhost:1234/v1/chat/completions";
-        } else if (endpointUrl.endsWith("/v1") || endpointUrl.endsWith("/v1/")) {
-            endpointUrl = endpointUrl.endsWith("/") ? endpointUrl + "chat/completions"
-                    : endpointUrl + "/chat/completions";
-        }
+        String targetUrl = resolveEndpoint(endpointUrl);
+        log.info("Local AI Stream Endpoint: {}", targetUrl);
 
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", "local-model");
+        requestBody.put("model", getModelName());
         requestBody.put("temperature", 0.7);
         requestBody.put("messages", List.of(
                 Map.of("role", "system", "content", "You are an expert DevOps AI assistant."),
@@ -96,7 +129,7 @@ public class LocalAiServiceImpl implements AiService {
         requestBody.put("stream", true);
 
         return webClient.post()
-                .uri(endpointUrl)
+                .uri(targetUrl)
                 .contentType(MediaType.APPLICATION_JSON)
                 .headers(headers -> {
                     if (apiKey != null && !apiKey.isEmpty()) {
