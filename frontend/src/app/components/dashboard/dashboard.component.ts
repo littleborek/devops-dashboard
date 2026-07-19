@@ -155,7 +155,7 @@ import { AiService, AiConfig } from '../../services/ai.service';
                                     <button (click)="openEditModal(server)" class="p-2 rounded hover:bg-gray-700 text-blue-400 transition" title="Düzenle">
                                         <i class="fa-solid fa-pen"></i>
                                     </button>
-                                    <button (click)="onDeleteServer(server.id)" class="p-2 rounded hover:bg-gray-700 text-red-400 transition" title="Sil">
+                                    <button (click)="openDeleteModal(server)" class="p-2 rounded hover:bg-gray-700 text-red-400 transition" title="Sil">
                                         <i class="fa-solid fa-trash"></i>
                                     </button>
                                 </div>
@@ -419,6 +419,36 @@ import { AiService, AiConfig } from '../../services/ai.service';
     </div>
     }
 
+    <!-- SUNUCU SİL MODAL -->
+    @if (showDeleteModal()) {
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 fade-in" (click)="showDeleteModal.set(false)">
+        <div class="bg-gray-800 border border-red-500/40 rounded-2xl shadow-2xl max-w-md w-full p-6 text-white" (click)="$event.stopPropagation()">
+            <div class="flex items-center justify-between pb-4 border-b border-gray-700">
+                <h3 class="text-lg font-bold text-red-400 flex items-center">
+                    <i class="fa-solid fa-triangle-exclamation mr-2"></i> Sunucu Sil
+                </h3>
+                <button (click)="showDeleteModal.set(false)" class="text-gray-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="py-4">
+                <p class="text-gray-300 text-sm">
+                    <strong class="text-white">{{ serverToDelete()?.name }}</strong> ({{ serverToDelete()?.ipAddress }}) sunucusunu silmek istediğinizden emin misiniz?
+                </p>
+                <p class="text-xs text-red-400 mt-3 font-semibold bg-red-950/40 p-2.5 rounded-lg border border-red-900/50">
+                    ⚠️ Bu işlem sunucuya ait tüm metrikleri, container geçmişini ve görev kayıtlarını kalıcı olarak silecektir.
+                </p>
+            </div>
+            <div class="flex justify-end space-x-3 pt-4 border-t border-gray-700">
+                <button (click)="showDeleteModal.set(false)" class="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-sm font-semibold transition">Vazgeç</button>
+                <button (click)="confirmDeleteServer()" class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-sm font-semibold transition shadow-lg shadow-red-600/30 flex items-center">
+                    <i class="fa-solid fa-trash mr-2"></i> Evet, Sil
+                </button>
+            </div>
+        </div>
+    </div>
+    }
+
     <!-- SUNUCU DÜZENLE MODAL -->
     @if (showEditModal()) {
     <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 fade-in" (click)="showEditModal.set(false)">
@@ -667,6 +697,8 @@ export class DashboardComponent implements OnInit {
     showNewServerModal = signal(false);
     showEditModal = signal(false);
     showSettingsModal = signal(false);
+    showDeleteModal = signal(false);
+    serverToDelete = signal<any>(null);
     copySuccess = signal(false);
     uninstallCmd = 'sudo crontab -l | grep -v "devops_agent.sh" | sudo crontab - && sudo rm -f /usr/local/bin/devops_agent.sh /tmp/devops_agent.sh';
     newServer: any = { name: '', ipAddress: '', operatingSystem: 'linux', location: '', category: '', skipSslCheck: false };
@@ -770,10 +802,26 @@ export class DashboardComponent implements OnInit {
         });
     }
 
-    onDeleteServer(id: number) {
-        if (confirm('Emin misiniz?')) {
-            this.apiService.deleteServer(id).subscribe(() => this.loadServers());
-        }
+    openDeleteModal(server: any) {
+        this.serverToDelete.set(server);
+        this.showDeleteModal.set(true);
+    }
+
+    confirmDeleteServer() {
+        const s = this.serverToDelete();
+        if (!s) return;
+
+        this.apiService.deleteServer(s.id).subscribe({
+            next: () => {
+                this.showDeleteModal.set(false);
+                this.serverToDelete.set(null);
+                this.loadServers();
+            },
+            error: (err: any) => {
+                console.error('Sunucu silme hatası:', err);
+                alert('Sunucu silinemedi: ' + (err.error?.message || err.message || 'Bilinmeyen hata'));
+            }
+        });
     }
 
     createServer() {

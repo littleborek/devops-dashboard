@@ -29,6 +29,7 @@ import com.berk.devopsdashboard.repository.ServerHistoryRepository;
 import com.berk.devopsdashboard.repository.DeploymentRepository;
 import com.berk.devopsdashboard.repository.DockerContainerRepository;
 import com.berk.devopsdashboard.repository.KubernetesPodRepository;
+import com.berk.devopsdashboard.repository.RemoteTaskRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +41,7 @@ public class ServerServiceImpl implements ServerService {
     private final DeploymentRepository deploymentRepository;
     private final DockerContainerRepository dockerContainerRepository;
     private final KubernetesPodRepository kubernetesPodRepository;
+    private final RemoteTaskRepository remoteTaskRepository;
 
     @Override
     public ServerResponse createServer(ServerRequest request) {
@@ -93,6 +95,7 @@ public class ServerServiceImpl implements ServerService {
         dockerContainerRepository.deleteByServerId(id);
         deploymentRepository.deleteByServerId(id);
         serverHistoryRepository.deleteByServerId(id);
+        remoteTaskRepository.deleteByServerId(id);
 
         serverRepository.deleteById(id);
     }
