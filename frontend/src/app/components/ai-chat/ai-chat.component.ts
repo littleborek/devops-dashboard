@@ -54,7 +54,7 @@ import { AiService } from '../../services/ai.service';
                <i class="fa-solid fa-robot" *ngIf="msg.role === 'ai'"></i>
               {{ msg.role === 'user' ? 'sysadmin' : 'ai-core' }}
             </span>
-            <div class="chat-html break-words whitespace-pre-wrap" [innerHTML]="formatMessage(msg.content)"></div>
+            <div class="chat-html break-words" style="white-space: pre-wrap; word-break: break-word;" [innerHTML]="formatMessage(msg.content)"></div>
           </div>
         </div>
         
@@ -169,9 +169,8 @@ export class AiChatComponent implements AfterViewChecked {
 
   formatMessage(content: string): string {
     if (!content) return '';
-    let t = content
+    return content
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/`(.*?)`/g, '<code>$1</code>');
-    return t.replace(/\n/g, '<br>');
   }
 }
