@@ -44,9 +44,38 @@ services:
       - devops-network
     restart: unless-stopped
 
+  prometheus:
+    container_name: devops-prometheus
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - devops-network
+    restart: unless-stopped
+
+  grafana:
+    container_name: devops-grafana
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - devops-network
+    restart: unless-stopped
+
 networks:
   devops-network:
     driver: bridge
 
 volumes:
   postgres_data:
+  grafana_data:

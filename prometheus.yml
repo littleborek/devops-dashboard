@@ -1,6 +1,9 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
 scrape_configs:
   - job_name: 'devops-dashboard'
     metrics_path: '/actuator/prometheus'
-    scrape_interval: 15s
     static_configs:
-      - targets: ['192.168.1.20:15000']
+      - targets: ['devops-dashboard:15000']
