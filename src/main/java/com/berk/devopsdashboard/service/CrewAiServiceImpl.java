@@ -27,7 +27,7 @@ public class CrewAiServiceImpl implements AiService {
     private final ServerRepository serverRepository;
 
     private String resolveCrewAiEndpoint(String endpointUrl) {
-        if (endpointUrl == null || endpointUrl.trim().isEmpty() || endpointUrl.contains(":1234")) {
+        if (endpointUrl == null || endpointUrl.trim().isEmpty()) {
             String envEndpoint = System.getenv("CREW_AI_ENDPOINT");
             if (envEndpoint != null && !envEndpoint.trim().isEmpty()) {
                 endpointUrl = envEndpoint;
@@ -37,15 +37,27 @@ public class CrewAiServiceImpl implements AiService {
         }
         
         String url = endpointUrl.trim();
+        if (url.contains(":1234")) {
+            url = url.replace(":1234", ":8000");
+        }
+        
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
             url = "http://" + url;
         }
         
+        if (url.contains("/v1/chat/completions")) {
+            url = url.replace("/v1/chat/completions", "");
+        } else if (url.endsWith("/v1") || url.endsWith("/v1/")) {
+            url = url.replaceAll("/v1/?$", "");
+        }
+        
+        if (!url.matches(".*:\\d+.*")) {
+            url = url + ":8000";
+        }
+        
         url = url.replaceAll("/+$", "");
         if (!url.endsWith("/api/v1/crew/analyze")) {
-            if (url.contains("/crew/analyze")) {
-                // Already has path structure
-            } else {
+            if (!url.contains("/crew/analyze")) {
                 url = url + "/api/v1/crew/analyze";
             }
         }
