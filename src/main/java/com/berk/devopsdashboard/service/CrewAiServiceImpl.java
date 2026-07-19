@@ -26,6 +26,33 @@ public class CrewAiServiceImpl implements AiService {
     private final ObjectMapper objectMapper;
     private final ServerRepository serverRepository;
 
+    private String resolveCrewAiEndpoint(String endpointUrl) {
+        if (endpointUrl == null || endpointUrl.trim().isEmpty() || endpointUrl.contains(":1234")) {
+            String envEndpoint = System.getenv("CREW_AI_ENDPOINT");
+            if (envEndpoint != null && !envEndpoint.trim().isEmpty()) {
+                endpointUrl = envEndpoint;
+            } else {
+                return "http://host.docker.internal:8000/api/v1/crew/analyze";
+            }
+        }
+        
+        String url = endpointUrl.trim();
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "http://" + url;
+        }
+        
+        url = url.replaceAll("/+$", "");
+        if (!url.endsWith("/api/v1/crew/analyze")) {
+            if (url.contains("/crew/analyze")) {
+                // Already has path structure
+            } else {
+                url = url + "/api/v1/crew/analyze";
+            }
+        }
+        
+        return url;
+    }
+
     @Override
     public String analyze(String prompt, Long serverId, String apiKey, String endpointUrl) {
         // Gathering server data to create a rich context
@@ -45,10 +72,7 @@ public class CrewAiServiceImpl implements AiService {
             });
         }
         
-        // Varsayılan CrewAI Python Servis adresi (Lokal 8000 portu)
-        if (endpointUrl == null || endpointUrl.isEmpty() || endpointUrl.contains(":1234")) {
-            endpointUrl = "http://localhost:8000/api/v1/crew/analyze";
-        }
+        String targetUrl = resolveCrewAiEndpoint(endpointUrl);
 // ... rest of the method
 
         HttpHeaders headers = new HttpHeaders();
@@ -61,8 +85,8 @@ public class CrewAiServiceImpl implements AiService {
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
         try {
-            log.info("CrewAI Servisi çağrılıyor: {}", endpointUrl);
-            String response = restTemplate.postForObject(endpointUrl, request, String.class);
+            log.info("CrewAI Servisi çağrılıyor: {}", targetUrl);
+            String response = restTemplate.postForObject(targetUrl, request, String.class);
             JsonNode root = objectMapper.readTree(response);
             
             if (root.has("result")) {
