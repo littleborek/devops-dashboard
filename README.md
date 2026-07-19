@@ -123,10 +123,37 @@ You can enter the LM Studio address in **any** of these formats — the system n
 | `http://100.95.111.63:1234` | `http://100.95.111.63:1234/v1/chat/completions` |
 | `http://100.95.111.63:1234/v1` | `http://100.95.111.63:1234/v1/chat/completions` |
 
-#### 🤖 Endpoint URL Format (CREW_AI mode)
-In CREW_AI mode, the endpoint in Settings is **your LM Studio IP** (same as LOCAL). The system **automatically routes** CrewAI requests to the Python service at `host.docker.internal:8000`.
+---
 
-> 💡 LM Studio note: LM Studio only accepts requests at `/v1/chat/completions`. The root endpoint (`/`) returns `"Unexpected endpoint POST /"` — this is normal and not an error.
+### 📈 Prometheus & Grafana Monitoring Integration
+
+This application exports live Micrometer Prometheus metrics for all registered servers, CPU/RAM/Disk telemetry, Docker containers, and Kubernetes pods.
+
+#### 1️⃣ Metrics Endpoint
+Access raw Prometheus metrics at:
+`http://<DASHBOARD_IP>:15000/actuator/prometheus`
+
+#### 2️⃣ Prometheus Scrape Configuration (`prometheus.yml`)
+Add the dashboard target to your Prometheus configuration file:
+```yaml
+scrape_configs:
+  - job_name: 'devops-dashboard'
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['host.docker.internal:15000'] # Or your server IP: 192.168.1.X:15000
+```
+
+#### 3️⃣ Available PromQL Metrics for Grafana
+| Metric Name | Description | Example PromQL Query |
+|---|---|---|
+| `devops_server_cpu_usage` | CPU usage percentage per server | `devops_server_cpu_usage{ip="192.168.1.19"}` |
+| `devops_server_ram_usage` | RAM usage percentage per server | `devops_server_ram_usage{name="casaos"}` |
+| `devops_server_disk_usage` | Disk usage percentage per server | `devops_server_disk_usage` |
+| `devops_server_container_count` | Total active Docker containers per server | `devops_server_container_count` |
+| `devops_server_pod_count` | Total Kubernetes pods per server | `devops_server_pod_count` |
+| `devops_server_status` | Server online status (1 = ONLINE, 0 = OFFLINE) | `devops_server_status` |
+| `devops_dashboard_online_count` | Total online servers count | `devops_dashboard_online_count` |
 
 ---
 
@@ -267,7 +294,37 @@ LM Studio adresini **istediğiniz formatta** girebilirsiniz — sistem otomatik 
 #### 🤖 Endpoint URL Formatları (CREW_AI modu)
 CREW_AI modunda Ayarlar'daki endpoint **LM Studio IP'nizdir** (LOCAL ile aynı). Sistem, CrewAI isteklerini `host.docker.internal:8000` üzerindeki Python servisine **otomatik yönlendirir**.
 
-> 💡 LM Studio notu: LM Studio yalnızca `/v1/chat/completions` adresine gelen istekleri işler. Kök adrese (`/`) yapılan istekler `"Unexpected endpoint POST /"` yanıtı döner — bu normaldir, hata değildir.
+---
+
+### 📈 Prometheus & Grafana İzleme Entegrasyonu
+
+Uygulama, kayıtlı tüm sunucuların CPU, RAM, Disk kullanım verilerini, aktif Docker container ve Kubernetes pod sayılarını **Prometheus formatında** canlı olarak dışa aktarır (Export).
+
+#### 1️⃣ Metrik Endpoint Adresi
+Canlı Prometheus metriklerine şu adresten erişilebilir:
+`http://<DASHBOARD_IP>:15000/actuator/prometheus`
+
+#### 2️⃣ Prometheus Hedef Yapılandırması (`prometheus.yml`)
+Prometheus konfigürasyon dosyanıza (`prometheus.yml`) aşağıdaki hedefi ekleyin:
+```yaml
+scrape_configs:
+  - job_name: 'devops-dashboard'
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['host.docker.internal:15000'] # Veya sunucu IP'niz: 192.168.1.X:15000
+```
+
+#### 3️⃣ Grafana PromQL Metrikleri & Panelleri
+| Metrik İsmi | Açıklama | Örnek PromQL Sorgusu |
+|---|---|---|
+| `devops_server_cpu_usage` | Sunucu CPU Kullanımı (%) | `devops_server_cpu_usage{ip="192.168.1.19"}` |
+| `devops_server_ram_usage` | Sunucu RAM Kullanımı (%) | `devops_server_ram_usage{name="casaos"}` |
+| `devops_server_disk_usage` | Sunucu Disk Kullanımı (%) | `devops_server_disk_usage` |
+| `devops_server_container_count` | Sunucudaki Aktif Docker Sayısı | `devops_server_container_count` |
+| `devops_server_pod_count` | Sunucudaki Kubernetes Pod Sayısı | `devops_server_pod_count` |
+| `devops_server_status` | Sunucu Çevrimiçi Durumu (1 = ONLINE, 0 = OFFLINE) | `devops_server_status` |
+| `devops_dashboard_online_count` | Toplam Çevrimiçi Sunucu Sayısı | `devops_dashboard_online_count` |
 
 ---
 
