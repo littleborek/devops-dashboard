@@ -15,33 +15,38 @@ The **"AI-Ops Dashboard"** is a high-performance infrastructure monitoring and d
 *   **Home-lab Enthusiasts**: Users managing complex local clusters (Docker/K8s) who need an intelligent notification layer.
 *   **System Administrators**: Who need to monitor servers behind restrictive firewalls without exposing high-risk ports.
 
-### ✨ Core AI-Ops Features Added
-*   **AI Diagnostic Layer**: Integration with Local LLMs (LM Studio/Ollama) and Cloud LLMs (OpenAI/Claude) using a Bring-Your-Own-Key (BYOK) architecture.
-*   **Root Cause Analysis (RCA)**: Automated packaging of server metrics (CPU, RAM, Status) to query the AI and display human-readable explanations in a polished modal interface.
-*   **Terminal-style AI Chatbot**: A macOS-inspired glassmorphic chat widget at the bottom right, processing natural language queries about system state.
-*   **Task Execution Queue & Command Signing**: A new secure polling system where remote agents pull commands. Every command is cryptographically signed via **RSA**. The agent verifies the digital signature before executing any script to prevent malicious takeovers.
-*   **WebSocket Live Log Streaming**: View remote Docker container logs streaming in real-time straight to your dashboard. This operates memory-to-memory via a secure WebSocket connection—no logs are ever saved to the disk or database.
-*   **mTLS Security (Mutual TLS)**: Strict authentication layer. The Spring Boot backend only accepts connections from clients and agents presenting valid X.509 digital certificates.
-*   **Telegram Alert Bridge**: Integrated Telegram API along with the existing Discord alerts for critical server states.
-*   **Modernized UI/UX**: Complete overhaul of the Server Detail page and Chatbot using TailwindCSS, featuring backdrop-blur, dynamic micro-animations, and modern prose styling.
+### ✨ Core AI-Ops Features
+*   **Hybrid AI Engine**: Intelligent routing between Direct LLM and CrewAI multi-agent depending on query complexity.
+*   **Smart Endpoint Resolution**: Just enter your LM Studio IP (e.g., `100.95.111.63`) — the system automatically appends the correct port and path.
+*   **Terminal-style AI Chatbot**: Streaming responses with proper whitespace rendering, bold/code markdown support.
+*   **Root Cause Analysis (RCA)**: Automated packaging of server metrics to query AI and display human-readable explanations.
+*   **Task Execution Queue & Command Signing**: Secure polling system where remote agents pull RSA-signed commands.
+*   **WebSocket Live Log Streaming**: View remote Docker container logs in real-time via WebSocket (no disk writes).
+*   **mTLS Security (Mutual TLS)**: Spring Boot backend only accepts connections from clients with valid X.509 certificates.
+*   **Telegram & Discord Alerts**: Dual notification bridge for critical server states.
 
 ### 🏗️ Architecture
-*   **Frontend (Angular)**: Hosts the Notification Hub, Chat Interface, and stores User API Keys securely.
-*   **Backend (Spring Boot)**: Orchestrates tasks, bridges to Telegram, and packages contexts for AI models.
-*   **AI Service (Python/LangGraph/CrewAI)**: The intelligent core using **LangGraph** for orchestration and **CrewAI** for autonomous diagnostics.
-*   **Remote Agent (Bash/Python)**: Polls for tasks, executes commands securely, and reports back.
-
+*   **Frontend (Angular 21)**: Streaming AI chat, notification hub, settings management.
+*   **Backend (Spring Boot / Java 17)**: Orchestrates tasks, bridges to Telegram, packages AI contexts.
+*   **AI Service (Python / LangGraph / CrewAI)**: Intelligent core with hybrid routing.
+*   **Remote Agent (Bash/Python)**: Polls for tasks, executes commands securely, reports back.
 
 ---
 
-### 🧠 AI Engine & Orchestration (Deep Dive)
-Beyond simple LLM prompts, this system utilizes a **Hybrid Orchestration** approach:
-*   **LangGraph Orchestrator**: Manages the state machine and intelligent routing. Every query is classified as **SIMPLE** (Direct LLM) or **COMPLEX** (CrewAI) to optimize speed and resource usage.
+### 🧠 AI Engine & Orchestration
+
+This system uses a **Hybrid Orchestration** approach beyond simple LLM prompts:
+
+| Query Type | Route | Engine |
+|---|---|---|
+| Greetings, simple info | SIMPLE | Direct LLM (fast) |
+| Error analysis, diagnostics | COMPLEX | CrewAI multi-agent |
+
+*   **LangGraph Orchestrator**: Classifies every query via LLM, falls back to keyword heuristic if unavailable.
 *   **CrewAI Multi-Agent Team**:
     *   **System Data Analyst**: Analyzes server heartbeats and logs for anomalies.
-    *   **DevOps Engineer**: Identifies root causes and provides executable terminal commands.
+    *   **DevOps Engineer**: Identifies root causes and produces actionable terminal commands.
 *   **Local Inference**: Optimized for **Mistral NeMo 12B** or **Llama-3.1-8B** via **LM Studio**, ensuring 100% data privacy.
-
 
 ---
 
@@ -51,56 +56,102 @@ Beyond simple LLM prompts, this system utilizes a **Hybrid Orchestration** appro
 *   Java 17 or higher
 *   Docker & Docker Compose
 *   Python 3.11+ (for AI Service)
+*   Node.js 20+ (for frontend build)
 *   **LM Studio** (for local AI inference)
 
-#### 1️⃣ Step 1: Start the Database
-The application requires PostgreSQL. Use the provided docker-compose file to start just the DB:
+#### 1️⃣ Start with Docker (Recommended)
 ```bash
-docker-compose up -d postgres
-```
+# Start DB + Dashboard in one command
+docker-compose up -d --build
 
-#### 2️⃣ Step 2: Run the AI Service (Optional but Recommended)
-```bash
+# Start AI Service (must run on host machine, not in Docker)
 cd ai-service
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt # or install crewai fastapi uvicorn langchain_openai
+pip install -r requirements.txt
 python3 app.py
 ```
+Open: `http://localhost:15000`
 
-#### 3️⃣ Step 3: Run the Application
-Start the Spring Boot backend (which also serves the integrated frontend on port 15000):
+#### 2️⃣ Start Manually (Development)
 ```bash
+# 1. Start DB
+docker-compose up -d postgres
+
+# 2. Start AI Service
+cd ai-service && python3 app.py &
+
+# 3. Start Backend
 ./mvnw spring-boot:run
 ```
-Once started, open your browser and go to: `http://localhost:15000`
 
-#### 4️⃣ Step 4: Configure Security & mTLS (CRITICAL)
+#### 3️⃣ Build Frontend (After Code Changes)
+```bash
+cd frontend
+npm run build:deploy   # Builds Angular AND copies to Spring static resources
+cd ..
+./mvnw clean package -DskipTests
+docker-compose up -d --build
+```
+
+> ⚠️ **Important**: Always use `npm run build:deploy` instead of `npm run build` when deploying to Docker. This ensures the compiled JS is copied to `src/main/resources/static/` before Maven packages the jar.
+
+---
+
+### 🤖 AI Engine Configuration (Settings Panel)
+
+Open the **AI Assistant** button → click the ⚙️ icon to configure:
+
+| Setting | Description |
+|---|---|
+| **LOCAL** | Direct LM Studio / Ollama endpoint |
+| **CREW_AI** | Python AI Service with LangGraph routing |
+| **CLOUD** | OpenAI / Claude (API key required) |
+
+#### 🔌 Endpoint URL Format (LOCAL mode)
+You can enter the LM Studio address in **any** of these formats — the system normalizes automatically:
+
+| You enter | System uses |
+|---|---|
+| `100.95.111.63` | `http://100.95.111.63:1234/v1/chat/completions` |
+| `100.95.111.63:1234` | `http://100.95.111.63:1234/v1/chat/completions` |
+| `http://100.95.111.63:1234` | `http://100.95.111.63:1234/v1/chat/completions` |
+| `http://100.95.111.63:1234/v1` | `http://100.95.111.63:1234/v1/chat/completions` |
+
+#### 🤖 Endpoint URL Format (CREW_AI mode)
+In CREW_AI mode, the endpoint in Settings is **your LM Studio IP** (same as LOCAL). The system **automatically routes** CrewAI requests to the Python service at `host.docker.internal:8000`.
+
+> 💡 LM Studio note: LM Studio only accepts requests at `/v1/chat/completions`. The root endpoint (`/`) returns `"Unexpected endpoint POST /"` — this is normal and not an error.
+
+---
+
+### 🔐 mTLS Security (CRITICAL)
+
 This application uses **Mutual TLS (mTLS)** for enterprise-grade security.
 
 **A. Establish Server Trust (Root CA):**
 *   Locate `certs/rootCA.crt` in the project root.
-*   **Mac**: Double-click -> Keychain Access -> Find "AI-Ops-Root-CA" -> Get Info -> Trust -> Set to **"Always Trust"**.
-*   **Windows**: Install Certificate -> Local Machine -> Place in **"Trusted Root Certification Authorities"**.
+*   **Mac**: Double-click → Keychain Access → Find "AI-Ops-Root-CA" → Get Info → Trust → **"Always Trust"**.
+*   **Windows**: Install Certificate → Local Machine → **"Trusted Root Certification Authorities"**.
 
 **B. Install Your Identity (Client Certificate):**
 *   Locate `certs/client.p12`.
 *   Double-click to install. **Password**: `ai-ops-password`.
 
 **C. Accessing the Dashboard:**
-*   URL: Use `https://localhost:15000`.
+*   URL: `https://localhost:15000`
 *   **Browser Prompt**: Select the `ai-ops-agent` certificate.
 
-#### 5️⃣ Step 5: Login
+**Login credentials:**
 *   **Username**: `admin`
-*   **Password**: `admin` (Auto-generated on first run)
+*   **Password**: `admin`
 
 ---
 
-### 🔐 Security Updates
-*   **mTLS Authentication**: X.509 Mutual TLS ensures unauthorized scanners cannot hit endpoints.
-*   **RSA Command Signing**: Every task is cryptographically signed. The agent verifies this before execution.
-*   **Audit Trail**: All remote commands are logged in `audit_logs` with digital signatures.
+### 🔐 Security Features
+*   **mTLS Authentication**: X.509 Mutual TLS prevents unauthorized scanners from hitting endpoints.
+*   **RSA Command Signing**: Every task is cryptographically signed. The agent verifies before execution.
+*   **Audit Trail**: All remote commands logged in `audit_logs` with digital signatures.
 
 ---
 
@@ -112,29 +163,31 @@ This application uses **Mutual TLS (mTLS)** for enterprise-grade security.
 
 ### 👤 Kimin İçin?
 *   **DevOps Mühendisleri & SRE'ler**: Hızlı Kök Neden Analizi (RCA) ve uzak komut çalıştırma ihtiyacı olanlar.
-*   **Home-lab Meraklıları**: Yerel clusterlarını (Docker/K8s) akıllı bir bildirim katmanıyla yönetmek isteyenler.
-*   **Sistem Yöneticileri**: Yüksek riskli portları açmadan, kısıtlı güvenlik duvarları arkasındaki sunucuları izlemek isteyenler.
+*   **Home-lab Meraklıları**: Yerel clusterlarını (Docker/K8s) akıllı bildirim katmanıyla yönetmek isteyenler.
+*   **Sistem Yöneticileri**: Yüksek riskli portları açmadan kısıtlı güvenlik duvarları arkasındaki sunucuları izlemek isteyenler.
 
-### ✨ Yeni AI-Ops Özellikleri ve Güvenlik Altyapısı
-*   **YZ Teşhis Katmanı**: Yerel YZ (LM Studio/Ollama) ve Bulut YZ (OpenAI/Claude) entegrasyonu (BYOK mimarisi).
-*   **Kök Neden Analizi (RCA)**: Sunucu metriklerinin otomatik paketlenip YZ'ye sorulması ve sonuçların glassmorphic modal arayüzde gösterilmesi.
-*   **Terminal Tasarımlı Chatbot**: Sistem durumu hakkında doğal dilde sorgulama yapılabilen macOS esintili sohbet aracı.
-*   **RSA Komut İmzalama**: Arka planda **RSA** ile imzalanan komutlar. Ajan, dijital imzayı doğrulamadan hiçbir betiği çalıştırmaz.
-*   **Canlı Log Akışı**: Uzak Docker konteyner loglarını WebSocket üzerinden RAM-to-RAM (diske yazmadan) canlı izleme.
-*   **mTLS Güvenliği**: Yalnızca geçerli X.509 dijital sertifikasına sahip istemciler ve ajanlar sisteme bağlanabilir.
-*   **Telegram Bildirim Köprüsü**: Kritik durumlar için Discord'a ek olarak Telegram API entegrasyonu.
-*   **Modern UI/UX**: TailwindCSS ile baştan aşağı yenilenen, bulanık arka planlı ve mikro animasyonlu arayüz.
+### ✨ Özellikler
+*   **Hibrit YZ Motoru**: Sorgu karmaşıklığına göre Doğrudan LLM veya CrewAI çoklu-ajan arasında akıllı yönlendirme.
+*   **Akıllı Endpoint Çözümleyici**: LM Studio IP'sini yazmanız yeterli — sistem portu ve yolu otomatik tamamlar.
+*   **Terminal Tasarımlı Chatbot**: Boşlukları koruyan akış (streaming) yanıtları, markdown desteği.
+*   **Kök Neden Analizi (RCA)**: Sunucu metrikleri otomatik paketlenerek YZ'ye sorulur.
+*   **RSA Komut İmzalama**: Ajan, dijital imzayı doğrulamadan hiçbir betiği çalıştırmaz.
+*   **Canlı Log Akışı**: Uzak Docker konteyner loglarını WebSocket üzerinden RAM-to-RAM canlı izleme.
+*   **mTLS Güvenliği**: Yalnızca geçerli X.509 dijital sertifikasına sahip istemciler bağlanabilir.
+*   **Telegram & Discord Bildirimleri**: Kritik durumlar için çift bildirim kanalı.
 
 ---
 
-### 🧠 Yapay Zeka Motoru ve Orkestrasyon (Detaylı Bakış)
-Bu sistem sadece basit bir YZ isteminden ibaret değildir; DevOps süreçleri için **LangGraph** ve **CrewAI** tabanlı hibrit bir yaklaşım kullanır:
-*   **LangGraph Orkestratörü**: Akış diyagramını ve zeki yönlendirmeyi yönetir. Her sorgu **SIMPLE** (Hızlı Yanıt) veya **COMPLEX** (Derin Analiz) olarak sınıflandırılarak hız-kaynak dengesi sağlanır.
-*   **CrewAI Çoklu-Ajan Ekibi**:
-    *   **Sistem Veri Analisti**: Sunucu metriklerini ve logları tarayarak anormallikleri bulur.
-    *   **DevOps Mühendisi**: Kök nedenleri belirler ve çalıştırılabilir terminal komutları üretir.
-*   **Yerel Çıkarım (Local Inference)**: **Mistral NeMo 12B** veya **Llama-3.1-8B** modelleriyle **LM Studio** üzerinden %100 veri gizliliği ile çalışır.
+### 🧠 Yapay Zeka Motoru (Detaylı Bakış)
 
+| Sorgu Tipi | Rota | Motor |
+|---|---|---|
+| Selamlama, genel bilgi | SIMPLE | Doğrudan LLM (hızlı) |
+| Hata analizi, teşhis | COMPLEX | CrewAI çoklu-ajan |
+
+*   **LangGraph Orkestratörü**: Her sorguyu YZ ile sınıflandırır, YZ başarısız olursa anahtar kelime buluştiği devreye girer.
+*   **CrewAI Çoklu-Ajan Ekibi**: Sistem Veri Analisti + DevOps Mühendisi.
+*   **Yerel Çıkarım**: **LM Studio** üzerinden **Mistral NeMo 12B** veya **Llama-3.1-8B** ile %100 veri gizliliği.
 
 ---
 
@@ -144,53 +197,95 @@ Bu sistem sadece basit bir YZ isteminden ibaret değildir; DevOps süreçleri i�
 *   Java 17 veya üzeri
 *   Docker & Docker Compose
 *   Python 3.11+ (AI Servisi için)
+*   Node.js 20+ (Frontend build için)
 *   **LM Studio** (Yerel YZ için)
 
-#### 1️⃣ 1. Adım: Veritabanını Başlatın
+#### 1️⃣ Docker ile Başlatın (Önerilen)
 ```bash
-docker-compose up -d postgres
-```
+# Veritabanı + Dashboard tek komutla
+docker-compose up -d --build
 
-#### 2️⃣ 2. Adım: AI Servisini Başlatın (Opsiyonel)
-```bash
+# AI Servisi (Host makinede çalışmalı, Docker içinde değil)
 cd ai-service
 python3 -m venv venv
 source venv/bin/activate
-pip install crewai fastapi uvicorn langchain_openai
+pip install -r requirements.txt
 python3 app.py
 ```
+Tarayıcıdan: `http://localhost:15000`
 
-#### 3️⃣ 3. Adım: Uygulamayı Çalıştırın
-Spring Boot backend'i başlatın (Frontend 15000 portunda entegre sunulur):
+#### 2️⃣ Manuel Başlatma (Geliştirme)
 ```bash
+docker-compose up -d postgres
+cd ai-service && python3 app.py &
 ./mvnw spring-boot:run
 ```
-Tarayıcınızdan şu adrese gidin: `http://localhost:15000`
 
-#### 4️⃣ 4. Adım: mTLS Yapılandırması (KRİTİK)
+#### 3️⃣ Frontend Derlemesi (Kod Değişikliğinden Sonra)
+```bash
+cd frontend
+npm run build:deploy   # Angular'ı derler VE Spring static klasörüne kopyalar
+cd ..
+./mvnw clean package -DskipTests
+docker-compose up -d --build
+```
+
+> ⚠️ **Önemli**: Docker'a deploy ederken `npm run build` yerine `npm run build:deploy` kullanın. Bu komut derlenen JS dosyalarını `src/main/resources/static/` klasörüne otomatik kopyalar.
+
+---
+
+### 🤖 YZ Motor Yapılandırması (Ayarlar Paneli)
+
+**AI Assistant** butonuna tıklayın → ⚙️ simgesine tıklayın:
+
+| Ayar | Açıklama |
+|---|---|
+| **LOCAL** | Doğrudan LM Studio / Ollama endpoint |
+| **CREW_AI** | LangGraph yönlendirmeli Python AI Servisi |
+| **CLOUD** | OpenAI / Claude (API anahtarı gerekli) |
+
+#### 🔌 Endpoint URL Formatları (LOCAL modu)
+LM Studio adresini **istediğiniz formatta** girebilirsiniz — sistem otomatik düzenler:
+
+| Girilen | Sistem Kullanır |
+|---|---|
+| `100.95.111.63` | `http://100.95.111.63:1234/v1/chat/completions` |
+| `100.95.111.63:1234` | `http://100.95.111.63:1234/v1/chat/completions` |
+| `http://100.95.111.63:1234` | `http://100.95.111.63:1234/v1/chat/completions` |
+| `http://100.95.111.63:1234/v1` | `http://100.95.111.63:1234/v1/chat/completions` |
+
+#### 🤖 Endpoint URL Formatları (CREW_AI modu)
+CREW_AI modunda Ayarlar'daki endpoint **LM Studio IP'nizdir** (LOCAL ile aynı). Sistem, CrewAI isteklerini `host.docker.internal:8000` üzerindeki Python servisine **otomatik yönlendirir**.
+
+> 💡 LM Studio notu: LM Studio yalnızca `/v1/chat/completions` adresine gelen istekleri işler. Kök adrese (`/`) yapılan istekler `"Unexpected endpoint POST /"` yanıtı döner — bu normaldir, hata değildir.
+
+---
+
+### 🔐 mTLS Yapılandırması (KRİTİK)
+
 **A. Sunucu Güvenini Sağlayın (Root CA):**
-*   `certs/rootCA.crt` dosyasını bulun ve çift tıklayın.
-*   **Mac**: Keychain Access -> "AI-Ops-Root-CA" -> Bilgi Ver -> Güven -> **"Her Zaman Güven"**.
-*   **Windows**: Sertifika Yükle -> Yerel Makine -> **"Güvenilen Kök Sertifika Yetkilileri"**.
+*   `certs/rootCA.crt` dosyasını çift tıklayın.
+*   **Mac**: Keychain Access → "AI-Ops-Root-CA" → Bilgi Ver → Güven → **"Her Zaman Güven"**.
+*   **Windows**: Sertifika Yükle → Yerel Makine → **"Güvenilen Kök Sertifika Yetkilileri"**.
 
 **B. İstemci Sertifikasını Yükleyin:**
 *   `certs/client.p12` dosyasını yükleyin. **Parola**: `ai-ops-password`.
 
 **C. Panele Giriş:**
-*   Adres: `https://localhost:15000`.
-*   **Sertifika Seçimi**: Tarayıcı uyarısında `ai-ops-agent` sertifikasını seçin.
+*   Adres: `https://localhost:15000`
+*   Tarayıcı sertifika sorduğunda `ai-ops-agent`'ı seçin.
 
-#### 5️⃣ 5. Adım: Giriş Yapın
+**Giriş bilgileri:**
 *   **Kullanıcı Adı**: `admin`
 *   **Şifre**: `admin`
 
 ---
 
 ### 🔐 Güvenlik ve Denetim
-*   **Denetim İzi (Audit Trail)**: Tüm uzak terminal görevleri, komut imzalarıyla birlikte PostgreSQL veritabanında saklanır.
-*   **Silme Koruması**: Kritik operasyonlar (sunucu silme vb.) `@PreAuthorize` ile korunur ve oturum gerektirir.
-*   **mTLS Zorunluluğu**: Geçerli sertifikası olmayan hiçbir dış tarayıcı API uç noktalarına ulaşamaz.
+*   **Denetim İzi**: Tüm uzak terminal görevleri komut imzalarıyla PostgreSQL'de saklanır.
+*   **mTLS Zorunluluğu**: Geçerli sertifikası olmayan hiçbir dış bağlantı API uç noktalarına ulaşamaz.
+*   **RSA Komut İmzalama**: Ajan imzasız hiçbir komutu çalıştırmaz.
 
-🗺️ **Roadmap / Gelecek Planları**: Grafana Exporter Desteği, Mobil Uyumlu UI, Kubernetes ResourceQuota Entegrasyonu.
+🗺️ **Roadmap**: Grafana Exporter Desteği, Mobil Uyumlu UI, Kubernetes ResourceQuota Entegrasyonu.
 
 ---
