@@ -60,7 +60,7 @@ public class ServerController {
 
     @GetMapping("/{id}/containers")
     public ResponseEntity<List<DockerContainer>> getContainers(@PathVariable Long id) {
-        return ResponseEntity.ok(containerRepository.findByServerId(id));
+        return ResponseEntity.ok(containerRepository.findCurrentByServerId(id));
     }
 
     @GetMapping("/{id}/logs")

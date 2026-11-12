@@ -1,0 +1,115 @@
+<main class="detail">
+  <header class="detail-toolbar">
+    <a routerLink="/" class="ops-button-secondary">{{ ui.text('Sunuculara dön', 'Back to servers') }}</a>
+    <app-preferences />
+  </header>
+  @if (loading()) {
+    <p class="ops-card" role="status">{{ ui.text('Sunucu yükleniyor…', 'Loading server…') }}</p>
+  } @else if (notFound()) {
+    <p class="ops-card">{{ ui.text('Sunucu bulunamadı.', 'Server not found.') }}</p>
+  } @else if (loadError()) {
+    <div class="ops-card" role="alert">
+      <p>{{ ui.text('Sunucu bilgileri alınamadı.', 'Could not load server details.') }}</p>
+      <button class="ops-button-secondary" (click)="reload()">{{ ui.text('Tekrar dene', 'Retry') }}</button>
+    </div>
+  } @else if (server(); as host) {
+    <section class="ops-card hero">
+      <div>
+        <p class="ops-eyebrow">{{ ui.text('SUNUCU', 'SERVER') }} / #{{ host.id }}</p>
+        <h1 class="ops-heading">{{ host.name }}</h1>
+        <p class="ops-muted">{{ host.ipAddress || '—' }} · {{ host.operatingSystem || '—' }} · {{ host.location || '—' }}</p>
+      </div>
+      <div class="actions">
+        <span class="badge" [class.danger]="host.status === 'OFFLINE'">{{ status(host.status) }}</span>
+        <button class="ops-button" (click)="openAi()">{{ ui.text('AI ile incele', 'Ask AI') }}</button>
+        <button class="ops-button-secondary" (click)="openLiveLogs()">{{ ui.text('Canlı loglar', 'Live logs') }}</button>
+        <button class="ops-button-secondary" (click)="openTerminal()">{{ ui.text('Manuel terminal', 'Manual terminal') }}</button>
+      </div>
+    </section>
+    <section class="ops-card">
+      <h2 class="ops-heading">{{ ui.text('Kaynak kullanımı', 'Resource usage') }}</h2>
+      <p class="ops-muted">
+        @switch (host.telemetryStatus) {
+          @case ('FRESH') { {{ ui.text('Telemetri güncel.', 'Telemetry is fresh.') }} }
+          @case ('STALE') { {{ ui.text('Son ölçüm eski; değerler canlı değil.', 'Telemetry is stale; values are not live.') }} }
+          @case ('NONE') { {{ ui.text('Henüz telemetri alınmadı.', 'No telemetry received yet.') }} }
+          @default { {{ ui.text('Son alınan ölçümler; canlı akış değil.', 'Last fetched measurements, not a live feed.') }} }
+        }
+        @if (host.lastTelemetryAt) { · {{ host.lastTelemetryAt | date:'medium' }} }
+      </p>
+      <dl class="metrics">
+        <div><dt>CPU</dt><dd>{{ metric(host.cpuUsage) }}</dd></div>
+        <div><dt>RAM</dt><dd>{{ metric(host.ramUsage) }}</dd></div>
+        <div><dt>{{ ui.text('Disk', 'Disk') }}</dt><dd>{{ metric(host.diskUsage) }}</dd></div>
+      </dl>
+    </section>
+    <section class="ops-card">
+      <h2 class="ops-heading">{{ ui.text('Dağıtımlar', 'Deployments') }}</h2>
+      @if (deploymentsLoading()) {
+        <p role="status">{{ ui.text('Dağıtımlar yükleniyor…', 'Loading deployments…') }}</p>
+      } @else if (deploymentsError()) {
+        <p role="alert">{{ ui.text('Dağıtımlar alınamadı.', 'Could not load deployments.') }}</p>
+        <button class="ops-button-secondary" (click)="loadDeployments()">{{ ui.text('Tekrar dene', 'Retry') }}</button>
+      } @else if (!deployments().length) {
+        <p class="ops-muted">{{ ui.text('Kayıtlı dağıtım yok.', 'No deployments recorded.') }}</p>
+      } @else {
+        <ul class="deployments">
+          @for (deployment of deployments(); track deployment.id) {
+            <li><strong>{{ deployment.applicationName }}</strong><code>{{ deployment.version }}</code><span>{{ status(deployment.status) }}</span>
+              <button class="ops-button-secondary" (click)="showDeployment(deployment)">{{ ui.text('Logları göster', 'View logs') }}</button>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
+</main>
+
+<dialog #terminalDialog aria-labelledby="terminal-heading" (cancel)="$event.preventDefault(); closeTerminal()">
+  <header><h2 id="terminal-heading">{{ ui.text('Manuel terminal', 'Manual terminal') }}</h2><button autofocus class="ops-button-secondary" (click)="closeTerminal()">{{ ui.text('Kapat', 'Close') }}</button></header>
+  <p class="danger warning">{{ ui.text('Bu komut seçili sunucuda çalışır. Göndermeden önce etkisini doğrulayın. Pencereyi kapatmak sunucudaki görevi iptal etmez.', 'This command runs on the selected server. Verify its effects before sending. Closing this window does not cancel the server task.') }}</p>
+  <pre tabindex="0">{{ terminalOutput().join('\n') || ui.text('Henüz çıktı yok.', 'No output yet.') }}</pre>
+  <form (ngSubmit)="sendTerminalCommand()">
+    <label for="terminal-command">{{ ui.text('Komut', 'Command') }}</label>
+    <input id="terminal-command" class="ops-input" name="command" [(ngModel)]="terminalInput" autocomplete="off">
+    <button class="ops-button" [disabled]="terminalWaiting() || !terminalInput.trim()">{{ terminalWaiting() ? ui.text('Bekleniyor…', 'Waiting…') : ui.text('Komutu gönder', 'Send command') }}</button>
+  </form>
+</dialog>
+
+<dialog #logsDialog aria-labelledby="logs-heading" (cancel)="$event.preventDefault(); closeLiveLogs()">
+  <header><h2 id="logs-heading">{{ ui.text('Canlı loglar', 'Live logs') }}</h2><button autofocus class="ops-button-secondary" (click)="closeLiveLogs()">{{ ui.text('Kapat', 'Close') }}</button></header>
+  <label for="log-container">{{ ui.text('Konteyner adı veya kimliği', 'Container name or ID') }}</label>
+  <input id="log-container" class="ops-input" [(ngModel)]="containerToLog">
+  <div class="actions log-actions">
+    <button class="ops-button" [disabled]="logBusy()" (click)="controlLogStream('start')">{{ ui.text('Akışı başlat', 'Start stream') }}</button>
+    <button class="ops-button-secondary" [disabled]="logBusy()" (click)="controlLogStream('stop')">{{ ui.text('Akışı durdur', 'Stop stream') }}</button>
+  </div>
+  <div role="status">
+    @switch (logNotice()) {
+      @case ('start') { {{ ui.text('Başlatma isteği sıraya alındı.', 'Start request queued.') }} }
+      @case ('stop') { {{ ui.text('Durdurma isteği sıraya alındı.', 'Stop request queued.') }} }
+      @case ('error') { {{ ui.text('İstek sıraya alınamadı.', 'Could not queue request.') }} }
+      @case ('invalid') { {{ ui.text('Geçerli bir konteyner adı veya kimliği girin.', 'Enter a valid container name or ID.') }} }
+    }
+  </div>
+  <div class="log-connection" role="status">
+    @if (logConnection() === 'connecting') {
+      {{ ui.text('Log akışına bağlanılıyor…', 'Connecting to the log stream…') }}
+    } @else if (logConnection() === 'error') {
+      {{ ui.text('Log akışı bağlantısı başarısız. Önceki loglar güncel olmayabilir.', 'Log stream connection failed. Previously received logs may be out of date.') }}
+    } @else if (logConnection() === 'open' && !liveLogs().length) {
+      {{ ui.text('Bağlantı açık. Henüz log alınmadı.', 'Connected. No logs received yet.') }}
+    }
+  </div>
+  @if (logConnection() === 'error') {
+    <button class="ops-button-secondary" (click)="reconnectLogs()">{{ ui.text('Yeniden bağlan', 'Reconnect') }}</button>
+  }
+  @if (liveLogs().length) {
+    <pre tabindex="0">@for (log of liveLogs(); track $index) {<div>{{ log.timestamp }} · {{ log.level }} · {{ log.content }}</div>}</pre>
+  }
+</dialog>
+
+<dialog #deploymentDialog aria-labelledby="deployment-heading">
+  <header><h2 id="deployment-heading">{{ ui.text('Dağıtım logları', 'Deployment logs') }}</h2><button autofocus class="ops-button-secondary" (click)="deploymentDialog.close()">{{ ui.text('Kapat', 'Close') }}</button></header>
+  <pre tabindex="0">{{ selectedDeployment()?.logs || ui.text('Log yok.', 'No logs available.') }}</pre>
+</dialog>

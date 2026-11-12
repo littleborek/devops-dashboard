@@ -1,3 +1,5 @@
+import asyncio
+import logging
 import os
 from fastapi import FastAPI, HTTPException
 from core.schema import AnalyzeRequest, AnalyzeResponse
@@ -6,6 +8,7 @@ from orchestrator.main_graph import app_workflow
 import uvicorn
 
 app = FastAPI(title="DevOps AI Service")
+logger = logging.getLogger(__name__)
 
 # LangSmith Activation
 if settings.LANGCHAIN_API_KEY:
@@ -18,24 +21,20 @@ if settings.LANGCHAIN_API_KEY:
 @app.post("/api/v1/crew/analyze", response_model=AnalyzeResponse)
 async def analyze(request: AnalyzeRequest):
     try:
-        initial_state = {
-            "query": request.query,
-            "context": request.context,
-            "response": "",
-            "mode": "",
-            "next_step": ""
-        }
-        
-        final_state = await app_workflow.ainvoke(initial_state)
+        async with asyncio.timeout(285):
+            final_state = await app_workflow.ainvoke({"query": request.query, "context": request.context})
         
         return {
             "result": final_state["response"],
             "status": "success",
             "mode": final_state["mode"]
         }
+    except TimeoutError as e:
+        logger.warning("AI workflow timed out")
+        raise HTTPException(status_code=504, detail="The AI request timed out.") from e
     except Exception as e:
-        print(f"Workflow Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("AI workflow failed (%s)", type(e).__name__)
+        raise HTTPException(status_code=502, detail="The AI provider could not complete the request.") from e
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

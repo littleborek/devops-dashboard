@@ -13,6 +13,7 @@ public class AgentSyncRequest {
     private Double diskUsage;
     private String loadAvg;
     private String totalRam;
+    private boolean metricsOnly;
 
     private List<DockerContainer> containers;
 }

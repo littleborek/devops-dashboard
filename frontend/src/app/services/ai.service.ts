@@ -1,6 +1,7 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { firstValueFrom, fromEvent, Observable, takeUntil } from 'rxjs';
+import { readSseData } from './sse-data';
 
 export interface AiConfig {
     provider: 'LOCAL' | 'CLOUD' | 'CREW_AI';
@@ -8,21 +9,40 @@ export interface AiConfig {
     endpointUrl?: string;
 }
 
+export interface AiServerContext { id: number; name: string; context: string }
+
 @Injectable({
     providedIn: 'root'
 })
 export class AiService {
+    readonly serverContext = signal<AiServerContext | null>(null);
+    readonly panelOpen = signal(false);
+
+    setServerContext(context: AiServerContext | null): void {
+        this.serverContext.update(current =>
+            current?.id === context?.id && current?.name === context?.name && current?.context === context?.context
+                ? current : context
+        );
+    }
+
+    openForServer(context: AiServerContext): void {
+        this.setServerContext(context);
+        this.panelOpen.set(true);
+    }
     private http = inject(HttpClient);
     private baseUrl = '/api/v1/ai';
 
     private readonly CONFIG_KEY = 'ai_ops_config';
 
     getConfig(): AiConfig {
-        const stored = localStorage.getItem(this.CONFIG_KEY);
-        if (stored) {
-            return JSON.parse(stored) as AiConfig;
-        }
-        return { provider: 'CLOUD' }; // default
+        try {
+            const config = JSON.parse(localStorage.getItem(this.CONFIG_KEY) ?? 'null');
+            if (config && ['LOCAL', 'CLOUD', 'CREW_AI'].includes(config.provider)) {
+                const header = (value: unknown) => typeof value === 'string' && /^[\x20-\x7e]*$/.test(value) ? value : undefined;
+                return { provider: config.provider, apiKey: header(config.apiKey), endpointUrl: header(config.endpointUrl) };
+            }
+        } catch { /* Storage can be corrupt or disabled. */ }
+        return { provider: 'CLOUD' };
     }
 
     saveConfig(config: AiConfig): void {
@@ -57,8 +77,14 @@ export class AiService {
         return this.http.post<{ response: string }>(`${this.baseUrl}/chat`, { query }, { headers });
     }
 
-    async *chatQueryStream(query: string): AsyncGenerator<string, void, unknown> {
+    async *chatQueryStream(query: string, signal: AbortSignal): AsyncGenerator<string, void, unknown> {
+        signal.throwIfAborted();
         const config = this.getConfig();
+        if (config.provider === 'CREW_AI') {
+            const { response } = await firstValueFrom(this.chatQuery(query).pipe(takeUntil(fromEvent(signal, 'abort'))));
+            yield response;
+            return;
+        }
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
             'X-AI-Provider': config.provider
@@ -68,6 +94,7 @@ export class AiService {
 
         const response = await fetch(`${this.baseUrl}/chat/stream`, {
             method: 'POST',
+            signal,
             headers,
             body: JSON.stringify({ query })
         });
@@ -76,29 +103,10 @@ export class AiService {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
-
-        if (!reader) return;
-
-        while (true) {
-            const { value, done } = await reader.read();
-            if (done) break;
-
-            const decoded = decoder.decode(value, { stream: true });
-
-            // Reconstruct potentially fragmented SSE frames
-            const lines = decoded.split('\n');
-            for (const line of lines) {
-                const trimmedLine = line.trim();
-                if (!trimmedLine) continue;
-
-                if (line.startsWith('data:')) {
-                    yield line.slice(5);
-                } else if (line.length > 0) {
-                    yield line;
-                }
-            }
+        if (!response.body) throw new Error('Missing chat response body');
+        for await (const chunk of readSseData(response.body)) {
+            if (chunk.startsWith('[STREAM_ERROR]')) throw new Error('AI provider stream failed');
+            yield chunk;
         }
     }
 }

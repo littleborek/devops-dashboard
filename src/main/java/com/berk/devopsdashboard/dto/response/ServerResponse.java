@@ -28,4 +28,6 @@ public class ServerResponse {
     private Boolean skipSslCheck;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime lastTelemetryAt;
+    private String telemetryStatus;
 }

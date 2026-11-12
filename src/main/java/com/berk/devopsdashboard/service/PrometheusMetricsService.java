@@ -10,6 +10,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,7 +44,12 @@ public class PrometheusMetricsService implements MeterBinder {
                                 .register(registry);
         }
 
-        public void registerServerMetrics(Server server) {
+        @EventListener(ApplicationReadyEvent.class)
+        public void registerExistingServers() {
+                serverRepository.findAll().forEach(this::registerServerMetrics);
+        }
+
+        public synchronized void registerServerMetrics(Server server) {
                 if (registry == null)
                         return;
 
@@ -72,7 +79,7 @@ public class PrometheusMetricsService implements MeterBinder {
                                 .register(registry);
 
                 Gauge.builder("devops_server_container_count", containerRepository,
-                                repo -> (double) repo.countByServer_IpAddress(serverIp))
+                                repo -> (double) repo.countCurrentByServerIp(serverIp))
                                 .tag("ip", serverIp)
                                 .tag("name", serverName)
                                 .register(registry);

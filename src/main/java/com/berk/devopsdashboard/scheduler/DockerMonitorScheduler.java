@@ -7,6 +7,7 @@ import com.berk.devopsdashboard.entity.enums.ServerStatus;
 import com.berk.devopsdashboard.repository.DockerContainerRepository;
 import com.berk.devopsdashboard.repository.ServerRepository;
 import com.berk.devopsdashboard.service.SystemMetricsService;
+import com.berk.devopsdashboard.service.PrometheusMetricsService;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.Container;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class DockerMonitorScheduler {
     private final DockerContainerRepository dockerContainerRepository;
     private final ServerRepository serverRepository;
     private final SystemMetricsService metricsService;
+    private final PrometheusMetricsService prometheusMetricsService;
 
     @Value("${app.mode:server}")
     private String appMode;
@@ -93,8 +95,10 @@ public class DockerMonitorScheduler {
         localServer.setCpuUsage(metricsService.getCpuUsage());
         localServer.setRamUsage(metricsService.getRamUsage());
         localServer.setTotalRam(metricsService.getTotalRam());
+        localServer.setLastTelemetryAt(LocalDateTime.now());
         localServer.setLastResponseTime(0);
         serverRepository.save(localServer);
+        prometheusMetricsService.registerServerMetrics(localServer);
 
         // Live container ID'leri topla
         java.util.Set<String> liveContainerIds = new java.util.HashSet<>();

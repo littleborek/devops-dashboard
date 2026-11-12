@@ -1,0 +1,36 @@
+{
+  "uid": "devops-overview",
+  "title": "DevOps Overview",
+  "schemaVersion": 41,
+  "refresh": "15s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "type": "timeseries", "title": "Server CPU (%)",
+      "datasource": { "type": "prometheus", "uid": "devops-prometheus" },
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [{ "refId": "A", "expr": "devops_server_cpu_usage", "legendFormat": "{{name}} ({{ip}})" }]
+    },
+    {
+      "id": 2, "type": "timeseries", "title": "Server RAM (%)",
+      "datasource": { "type": "prometheus", "uid": "devops-prometheus" },
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [{ "refId": "A", "expr": "devops_server_ram_usage", "legendFormat": "{{name}} ({{ip}})" }]
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "Known Docker containers",
+      "datasource": { "type": "prometheus", "uid": "devops-prometheus" },
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [{ "refId": "A", "expr": "devops_server_container_count", "legendFormat": "{{name}} ({{ip}})" }]
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "Registered and online servers",
+      "datasource": { "type": "prometheus", "uid": "devops-prometheus" },
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        { "refId": "A", "expr": "devops_dashboard_server_count", "legendFormat": "Registered" },
+        { "refId": "B", "expr": "devops_dashboard_online_count", "legendFormat": "Online" }
+      ]
+    }
+  ]
+}

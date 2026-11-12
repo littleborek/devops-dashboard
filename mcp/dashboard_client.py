@@ -47,9 +47,9 @@ async def get_server_by_id(server_id: int) -> dict:
 async def run_crew_analysis(query: str, context: str = "") -> dict:
     """
     Sends a query to the Python AI Service (FastAPI + CrewAI/LangGraph).
-    This triggers the full LangGraph orchestrator → Router → Direct LLM or CrewAI.
+    LangGraph selects how many CrewAI agents are needed.
     """
-    async with httpx.AsyncClient(timeout=120.0) as client:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(300.0, connect=5.0)) as client:
         payload = {"query": query, "context": context or "DevOps Dashboard System Analysis"}
         resp = await client.post(config.AI_SERVICE_URL, json=payload)
         resp.raise_for_status()

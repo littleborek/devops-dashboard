@@ -26,9 +26,8 @@ mcp = FastMCP("DevOps Dashboard")
 async def analyze_incident(query: str, context: str = "") -> str:
     """
     Analyzes a DevOps incident using the CrewAI multi-agent system.
-    The query goes through a LangGraph orchestrator which routes it to either:
-    - Direct LLM (for simple questions)
-    - CrewAI team (for complex diagnostics with System Analyst + DevOps Engineer)
+    LangGraph selects the DevOps Engineer alone for simple questions and adds
+    telemetry analysis or incident review when the query calls for them.
 
     Args:
         query: The DevOps question or incident description

@@ -33,6 +33,15 @@ public class AgentReceiverController {
     @PostMapping("/sync")
     @Transactional
     public ResponseEntity<String> receiveDockerData(@RequestBody AgentSyncRequest request) {
+        List<DockerContainer> containers = request.getContainers();
+        if (request.isMetricsOnly() && containers != null && !containers.isEmpty()) {
+            return ResponseEntity.badRequest().body("Metrik istegi konteyner envanteri icermemeli.");
+        }
+        if (!request.isMetricsOnly() && (containers == null || containers.stream().anyMatch(container ->
+                container == null || container.getContainerId() == null || container.getContainerId().isBlank()))) {
+            return ResponseEntity.badRequest().body("Konteyner listesi gerekli; her konteyner geçerli bir ID içermeli.");
+        }
+
         log.info("Agent'dan Docker/Metrik verisi geldi: {} ({}) - CPU: %{}, RAM: %{}, Disk: %{}, Load: {}",
                 request.getServerName(), request.getServerIp(), request.getCpuUsage(), request.getRamUsage(),
                 request.getDiskUsage(), request.getLoadAvg());
@@ -44,6 +53,7 @@ public class AgentReceiverController {
 
         Server server = serverOpt.get();
         server.setStatus(ServerStatus.ONLINE);
+        server.setLastTelemetryAt(LocalDateTime.now());
         server.setCpuUsage(request.getCpuUsage());
         server.setRamUsage(request.getRamUsage());
         server.setDiskUsage(request.getDiskUsage());
@@ -55,7 +65,11 @@ public class AgentReceiverController {
         // Prometheus Metriklerini Kaydet/Güncelle
         metricsService.registerServerMetrics(server);
 
-        List<String> incomingIds = request.getContainers().stream()
+        if (request.isMetricsOnly()) {
+            return ResponseEntity.ok("{\"message\":\"Metrics sync successful\",\"id\":" + server.getId() + "}");
+        }
+
+        List<String> incomingIds = containers.stream()
                 .map(DockerContainer::getContainerId)
                 .collect(java.util.stream.Collectors.toList());
 
@@ -66,7 +80,7 @@ public class AgentReceiverController {
             }
         }
 
-        for (DockerContainer incomingContainer : request.getContainers()) {
+        for (DockerContainer incomingContainer : containers) {
             Optional<DockerContainer> existing = containerRepository
                     .findByContainerId(incomingContainer.getContainerId());
 

@@ -1,0 +1,35 @@
+<div class="login-page">
+  <header class="login-nav">
+    <a href="/" class="login-brand"><span aria-hidden="true">K.</span> DevOps Dashboard</a>
+    <app-preferences />
+  </header>
+  <main class="login-main">
+    <section class="intro" aria-labelledby="intro-title">
+      <p class="ops-eyebrow">{{ ui.text('KOBALT NÖBET / ALTYAPI OPERASYONLARI', 'COBALT WATCH / INFRASTRUCTURE OPERATIONS') }}</p>
+      <h1 id="intro-title" class="ops-heading">{{ ui.text('Her sunucu.', 'Every server.') }}<br><span>{{ ui.text('Tek bakışta.', 'One clear view.') }}</span></h1>
+      <p class="intro-description">{{ ui.text('Canlı metrikler, sunucu logları ve ihtiyacın olduğunda yapay zekâ desteği. Kontrol sende.', 'Live metrics, server logs and AI support when you need it. You stay in control.') }}</p>
+      <div class="signal-art" aria-hidden="true">
+        <div class="signal-top"><span>INFRASTRUCTURE / OBSERVABILITY</span><span>01 — 03</span></div>
+        <div class="signal-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="signal-bottom">METRICS <span>LOGS</span> AI INSIGHTS</div>
+      </div>
+    </section>
+    <section class="login-card ops-card" aria-labelledby="login-title">
+      <p class="ops-eyebrow">{{ ui.text('ÇALIŞMA ALANINA GİRİŞ', 'WORKSPACE ACCESS') }}</p>
+      <h2 id="login-title" class="ops-heading">{{ ui.text('Nöbet sende.', 'Your watch starts here.') }}</h2>
+      <p class="ops-muted">{{ ui.text('Devam etmek için hesabınla giriş yap.', 'Sign in with your account to continue.') }}</p>
+      @if (error()) {
+        <div class="ops-alert" role="alert">{{ error() === 'credentials' ? ui.text('Kullanıcı adı veya şifre hatalı.', 'Incorrect username or password.') : ui.text('Bağlantı kurulamadı. Lütfen tekrar dene.', 'Could not connect. Please try again.') }}</div>
+      }
+      <form (ngSubmit)="onLogin()" [attr.aria-busy]="isLoading()">
+        <label for="username">{{ ui.text('Kullanıcı adı', 'Username') }}</label>
+        <input id="username" name="username" class="ops-input" [(ngModel)]="username" required autocomplete="username" [disabled]="isLoading()">
+        <label for="password">{{ ui.text('Şifre', 'Password') }}</label>
+        <input id="password" name="password" class="ops-input" type="password" [(ngModel)]="password" required autocomplete="current-password" [disabled]="isLoading()">
+        <button class="ops-button" type="submit" [disabled]="isLoading() || !username.trim() || !password">{{ isLoading() ? ui.text('Giriş yapılıyor…', 'Signing in…') : ui.text('Panele giriş yap', 'Sign in to dashboard') }}<span aria-hidden="true">→</span></button>
+      </form>
+      <p class="login-note">{{ ui.text('Sunucuların ve analizlerin, tek çalışma alanında.', 'Your servers and analysis, in one workspace.') }}</p>
+    </section>
+  </main>
+  <footer>DevOps Dashboard <span>{{ ui.text('Gözlemle. Anla. Karar ver.', 'Observe. Understand. Decide.') }}</span></footer>
+</div>

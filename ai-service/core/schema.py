@@ -1,17 +1,18 @@
-from typing import TypedDict, Optional
-from pydantic import BaseModel
+from typing import Annotated, NotRequired, TypedDict
+
+from pydantic import BaseModel, StringConstraints
 
 # LangGraph State
 class DevOpsState(TypedDict):
     query: str
     context: str
-    response: str
-    mode: str
-    next_step: str
+    response: NotRequired[str]
+    mode: NotRequired[str]
+    agent_count: NotRequired[int]
 
 # FastAPI Request Model
 class AnalyzeRequest(BaseModel):
-    query: str = ""
+    query: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
     context: str = "DevOps Dashboard System Analysis"
 
 # FastAPI Response Model

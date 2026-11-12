@@ -14,14 +14,25 @@ import java.util.Optional;
 @Repository
 public interface DockerContainerRepository extends JpaRepository<DockerContainer, Long> {
 
+    String CURRENT_INVENTORY = "d.containerId IS NOT NULL "
+            + "AND function('regexp_replace', d.containerId, '^\\s+$', '') <> '' "
+            + "AND (d.state IS NULL OR lower(d.state) <> 'removed')";
+
     Optional<DockerContainer> findByContainerId(String containerId);
 
     List<DockerContainer> findByServerId(Long serverId);
+
+    @Query("SELECT d FROM DockerContainer d WHERE " + CURRENT_INVENTORY)
+    List<DockerContainer> findCurrent();
+
+    @Query("SELECT d FROM DockerContainer d WHERE d.server.id = :serverId AND " + CURRENT_INVENTORY)
+    List<DockerContainer> findCurrentByServerId(@Param("serverId") Long serverId);
 
     @Transactional
     @Modifying
     @Query("DELETE FROM DockerContainer d WHERE d.server.id = :serverId")
     void deleteByServerId(@Param("serverId") Long serverId);
 
-    long countByServer_IpAddress(String ipAddress);
+    @Query("SELECT count(d) FROM DockerContainer d WHERE d.server.ipAddress = :ipAddress AND " + CURRENT_INVENTORY)
+    long countCurrentByServerIp(@Param("ipAddress") String ipAddress);
 }

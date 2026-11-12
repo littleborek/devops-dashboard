@@ -1,0 +1,23 @@
+.launcher { position: fixed; z-index: 30; inset: auto 1rem 1rem auto; box-shadow: 0 6px 24px #14193435; }
+dialog { position: fixed; inset: 0 0 0 auto; margin: 0; width: min(100%, 32rem); max-width: none; height: 100dvh; max-height: none; padding: 0; border: 0; border-inline-start: 1px solid var(--border); background: var(--surface); color: var(--ink); }
+dialog[open] { display: flex; flex-direction: column; }
+dialog::backdrop { background: #14193488; }
+header, .context, .transcript, .notice, form { padding: .85rem 1.25rem; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--border); }
+h2, p { margin: 0; }
+h2 { font-size: clamp(1.15rem, 4vw, 1.65rem); line-height: 1.2; }
+.context { background: var(--surface-alt); overflow-wrap: anywhere; }
+.context p { margin: .35rem 0; }
+.transcript { flex: 1; min-height: 0; overflow: auto; }
+.turn + .turn { border-top: 1px solid var(--border); margin-top: 1rem; padding-top: 1rem; }
+.turn-status { color: var(--muted); font-size: .875rem; }
+.question, .reply, pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.question, .snippet { margin-bottom: .75rem; padding: .75rem; border-radius: .6rem; background: var(--surface-alt); }
+.reply { margin-bottom: .75rem; }
+.snippet pre { margin: .5rem 0 0; }
+.notice { color: var(--muted); font-size: .875rem; }
+.notice:empty { padding: 0; }
+form { display: grid; gap: .5rem; border-top: 1px solid var(--border); padding-bottom: max(.85rem, env(safe-area-inset-bottom)); }
+form button { justify-self: end; }
+textarea { width: 100%; resize: vertical; max-height: 25dvh; }
+@media (max-width: 40rem) { dialog { width: 100%; border: 0; } }

@@ -61,6 +61,11 @@ public class Server {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+    private LocalDateTime lastTelemetryAt;
+
+    public boolean hasFreshTelemetry(LocalDateTime now) {
+        return lastTelemetryAt != null && lastTelemetryAt.isAfter(now.minusSeconds(45));
+    }
 
     @PrePersist
     protected void onCreate() {

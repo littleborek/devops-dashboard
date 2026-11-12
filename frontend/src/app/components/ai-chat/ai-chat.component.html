@@ -1,0 +1,62 @@
+<button type="button" class="ops-button launcher" (click)="ai.panelOpen.set(true)">
+  {{ ui.text('AI Yardımcı', 'AI Assistant') }}
+</button>
+
+<dialog #panel aria-labelledby="ai-heading" (cancel)="$event.preventDefault(); close()" (close)="restoreFocus()">
+  <header>
+    <div>
+      <p class="ops-eyebrow">{{ ui.text('KOBALT NÖBET / YAPAY ZEKÂ', 'COBALT WATCH / AI') }}</p>
+      <h2 id="ai-heading" class="ops-heading">{{ ui.text('AI Yardımcı', 'AI Assistant') }}</h2>
+    </div>
+    <button type="button" class="ops-button-secondary" autofocus (click)="close()">{{ ui.text('Kapat', 'Close') }}</button>
+  </header>
+  <div class="context">
+    @if (ai.serverContext(); as server) {
+      <strong>{{ server.name }} · #{{ server.id }}</strong>
+      <p>{{ ui.text('Soru ile sunucu özeti ve varsa son log örnekleri yapılandırılmış sağlayıcıya gönderilir.', 'Your question sends the server snapshot and any available recent log excerpts to the configured provider.') }}</p>
+      <button type="button" class="ops-button-secondary" (click)="removeContext()">{{ ui.text('Bağlamı kaldır', 'Remove context') }}</button>
+    } @else {
+      <p>{{ ui.text('Genel oturum · Sunucu bağlamı yok', 'General session · No server context') }}</p>
+    }
+  </div>
+  <div #transcript class="transcript" tabindex="0" [attr.aria-label]="ui.text('Soru ve yanıt', 'Question and answer')">
+    @for (turn of turns(); track $index) {
+      <article class="turn">
+      <p class="question">{{ turn.question }}</p>
+      @for (part of parts(turn.reply); track $index) {
+        @if (part.code) {
+          <div class="snippet">
+            <button type="button" class="ops-button-secondary" (click)="copy(part.text)">{{ ui.text('Kopyala', 'Copy') }}</button>
+            <pre><code>{{ part.text }}</code></pre>
+          </div>
+        } @else {
+          <p class="reply">{{ part.text }}</p>
+        }
+      }
+      <div class="turn-status" role="status">
+        @switch (turn.state) {
+          @case ('waiting') { {{ ui.text('Yanıt bekleniyor…', 'Waiting for response…') }} }
+          @case ('error') { {{ turn.reply ? ui.text('Yanıt kesildi. Görünen kısım eksik olabilir.', 'The response was interrupted and may be incomplete.') : ui.text('Yanıt alınamadı. Sağlayıcı ayarlarını ve bağlantıyı kontrol edin.', 'No response received. Check provider settings and connectivity.') }} }
+          @case ('stopped') { {{ ui.text('İstek durduruldu. Varsa görünen yanıt kısmi olabilir.', 'Request stopped. Any visible response may be partial.') }} }
+        }
+      </div>
+      </article>
+    } @empty {
+      <p class="ops-muted">{{ ui.text('Bir soru yazın. AI önerileri komut çalıştırmaz; kullanmadan önce doğrulayın.', 'Ask a question. AI suggestions do not run commands; review them before use.') }}</p>
+    }
+  </div>
+  <div class="notice" role="status">
+    @if (copyState() === 'ok') { {{ ui.text(' Kopyalandı.', ' Copied.') }} }
+    @if (copyState() === 'error') { {{ ui.text(' Kopyalanamadı.', ' Could not copy.') }} }
+  </div>
+  <form (ngSubmit)="send()">
+    <p class="ops-muted">{{ ui.text('Önceki mesajlar burada görünür; sağlayıcıya yalnızca yeni soru ve varsa sunucu özeti gönderilir.', 'Earlier messages stay visible here; only the new question and any server snapshot are sent to the provider.') }}</p>
+    <label for="ai-question">{{ ui.text('Sorunuz', 'Your question') }}</label>
+    <textarea #input id="ai-question" name="question" class="ops-input" [(ngModel)]="draft" rows="3" maxlength="2000"></textarea>
+    @if (waiting()) {
+      <button type="button" class="ops-button-secondary" (click)="stopFromPanel()">{{ ui.text('Durdur', 'Stop') }}</button>
+    } @else {
+      <button type="submit" class="ops-button" [disabled]="!draft.trim()">{{ ui.text('Gönder', 'Send') }}</button>
+    }
+  </form>
+</dialog>

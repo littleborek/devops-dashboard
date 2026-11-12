@@ -16,7 +16,7 @@ The **"AI-Ops Dashboard"** is a high-performance infrastructure monitoring and d
 *   **System Administrators**: Who need to monitor servers behind restrictive firewalls without exposing high-risk ports.
 
 ### ✨ Core AI-Ops Features
-*   **Hybrid AI Engine**: Intelligent routing between Direct LLM and CrewAI multi-agent depending on query complexity.
+*   **CrewAI Routing**: Runs one to three agents based on query complexity.
 *   **Smart Endpoint Resolution**: Just enter your LM Studio IP (e.g., `100.95.111.63`) — the system automatically appends the correct port and path.
 *   **Terminal-style AI Chatbot**: Streaming responses with proper whitespace rendering, bold/code markdown support.
 *   **Root Cause Analysis (RCA)**: Automated packaging of server metrics to query AI and display human-readable explanations.
@@ -39,13 +39,11 @@ This system uses a **Hybrid Orchestration** approach beyond simple LLM prompts:
 
 | Query Type | Route | Engine |
 |---|---|---|
-| Greetings, simple info | SIMPLE | Direct LLM (fast) |
-| Error analysis, diagnostics | COMPLEX | CrewAI multi-agent |
+| Greetings, simple info | SIMPLE | DevOps Engineer |
+| Error analysis, diagnostics | DIAGNOSTIC | Telemetry Analyst + DevOps Engineer |
+| Major outages, multi-system incidents | INCIDENT | Telemetry Analyst + Incident Reviewer + DevOps Engineer |
 
-*   **LangGraph Orchestrator**: Classifies every query via LLM, falls back to keyword heuristic if unavailable.
-*   **CrewAI Multi-Agent Team**:
-    *   **System Data Analyst**: Analyzes server heartbeats and logs for anomalies.
-    *   **DevOps Engineer**: Identifies root causes and produces actionable terminal commands.
+*   **LangGraph Orchestrator**: Routes basic greetings immediately and classifies other queries via the configured model, with keyword routing if classification fails.
 *   **Local Inference**: Optimized for **Mistral NeMo 12B** or **Llama-3.1-8B** via **LM Studio**, ensuring 100% data privacy.
 
 ---
@@ -199,7 +197,7 @@ This application uses **Mutual TLS (mTLS)** for enterprise-grade security.
 *   **Sistem Yöneticileri**: Yüksek riskli portları açmadan kısıtlı güvenlik duvarları arkasındaki sunucuları izlemek isteyenler.
 
 ### ✨ Özellikler
-*   **Hibrit YZ Motoru**: Sorgu karmaşıklığına göre Doğrudan LLM veya CrewAI çoklu-ajan arasında akıllı yönlendirme.
+*   **CrewAI Yönlendirmesi**: Sorgu karmaşıklığına göre bir, iki veya üç ajan çalıştırır.
 *   **Akıllı Endpoint Çözümleyici**: LM Studio IP'sini yazmanız yeterli — sistem portu ve yolu otomatik tamamlar.
 *   **Terminal Tasarımlı Chatbot**: Boşlukları koruyan akış (streaming) yanıtları, markdown desteği.
 *   **Kök Neden Analizi (RCA)**: Sunucu metrikleri otomatik paketlenerek YZ'ye sorulur.
@@ -214,11 +212,11 @@ This application uses **Mutual TLS (mTLS)** for enterprise-grade security.
 
 | Sorgu Tipi | Rota | Motor |
 |---|---|---|
-| Selamlama, genel bilgi | SIMPLE | Doğrudan LLM (hızlı) |
-| Hata analizi, teşhis | COMPLEX | CrewAI çoklu-ajan |
+| Selamlama, genel bilgi | SIMPLE | DevOps Mühendisi |
+| Hata analizi, teşhis | DIAGNOSTIC | Telemetri Analisti + DevOps Mühendisi |
+| Kritik kesinti, birden fazla sistemi etkileyen olay | INCIDENT | Telemetri Analisti + Olay İnceleme Uzmanı + DevOps Mühendisi |
 
-*   **LangGraph Orkestratörü**: Her sorguyu YZ ile sınıflandırır, YZ başarısız olursa anahtar kelime buluştiği devreye girer.
-*   **CrewAI Çoklu-Ajan Ekibi**: Sistem Veri Analisti + DevOps Mühendisi.
+*   **LangGraph Orkestratörü**: Basit selamlamaları doğrudan yönlendirir. Diğer sorguları modelle sınıflandırır ve sınıflandırma başarısız olursa anahtar kelimeleri kullanır.
 *   **Yerel Çıkarım**: **LM Studio** üzerinden **Mistral NeMo 12B** veya **Llama-3.1-8B** ile %100 veri gizliliği.
 
 ---
@@ -292,7 +290,7 @@ LM Studio adresini **istediğiniz formatta** girebilirsiniz — sistem otomatik 
 | `http://100.95.111.63:1234/v1` | `http://100.95.111.63:1234/v1/chat/completions` |
 
 #### 🤖 Endpoint URL Formatları (CREW_AI modu)
-CREW_AI modunda Ayarlar'daki endpoint **LM Studio IP'nizdir** (LOCAL ile aynı). Sistem, CrewAI isteklerini `host.docker.internal:8000` üzerindeki Python servisine **otomatik yönlendirir**.
+CREW_AI modunda Ayarlar'daki endpoint Python AI servisinin adresidir. Boş bırakıldığında Spring Boot yerelde `http://localhost:8000`, Docker imajında `http://host.docker.internal:8000` adresini kullanır. Bu varsayılan adresi `CREW_AI_ENDPOINT` ile, model adresi ve anahtarını ise Python servisinin `OPENAI_API_BASE` ve `OPENAI_API_KEY` ayarlarıyla değiştirebilirsiniz.
 
 ---
 

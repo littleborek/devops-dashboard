@@ -1,5 +1,8 @@
-import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { filter, map } from 'rxjs';
+import { UiService } from './services/ui.service';
 import { AiChatComponent } from './components/ai-chat/ai-chat.component';
 
 @Component({
@@ -7,8 +10,15 @@ import { AiChatComponent } from './components/ai-chat/ai-chat.component';
   imports: [RouterOutlet, AiChatComponent],
   template: `
     <router-outlet />
-    <app-ai-chat></app-ai-chat>
+    @if (!isLogin()) { <app-ai-chat></app-ai-chat> }
   `,
   styles: [],
 })
-export class App { }
+export class App {
+  private readonly ui = inject(UiService);
+  private readonly router = inject(Router);
+  readonly isLogin = toSignal(this.router.events.pipe(
+    filter(event => event instanceof NavigationEnd),
+    map(event => (event as NavigationEnd).urlAfterRedirects.split(/[?#]/)[0] === '/login')
+  ), { initialValue: true });
+}

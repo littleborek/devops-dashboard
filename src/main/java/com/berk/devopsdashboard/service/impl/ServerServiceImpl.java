@@ -16,6 +16,8 @@ import javax.net.ssl.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
@@ -125,13 +127,17 @@ public class ServerServiceImpl implements ServerService {
                 .skipSslCheck(server.getSkipSslCheck())
                 .createdAt(server.getCreatedAt())
                 .updatedAt(server.getUpdatedAt())
+                .lastTelemetryAt(server.getLastTelemetryAt())
+                .telemetryStatus(server.hasFreshTelemetry(LocalDateTime.now()) ? "FRESH"
+                        : (server.getLastTelemetryAt() != null || server.getCpuUsage() != null || server.getRamUsage() != null)
+                                ? "STALE" : "NONE")
                 .build();
     }
 
     @Override
     public ServerStatus checkServerStatus(Server server) {
-        if (server.getUpdatedAt() != null &&
-                server.getUpdatedAt().isAfter(LocalDateTime.now().minusSeconds(45))) {
+        if (server.hasFreshTelemetry(LocalDateTime.now())) {
+            server.setLastResponseTime(-1);
             return ServerStatus.ONLINE;
         }
         long startTime = System.currentTimeMillis();
@@ -140,6 +146,19 @@ public class ServerServiceImpl implements ServerService {
         if (rawAddress == null)
             return ServerStatus.OFFLINE;
         String address = rawAddress.trim().replace("\n", "").replace("\r", "");
+
+        if (server.getOperatingSystem() != null
+                && server.getOperatingSystem().toLowerCase(java.util.Locale.ROOT).startsWith("windows")
+                && address.matches("[A-Za-z0-9.-]+")) {
+            try (Socket socket = new Socket()) {
+                socket.connect(new InetSocketAddress(address, 22), 2000);
+                server.setLastResponseTime((int) (System.currentTimeMillis() - startTime));
+                return ServerStatus.ONLINE;
+            } catch (IOException e) {
+                server.setLastResponseTime(-1);
+                return ServerStatus.UNKNOWN;
+            }
+        }
 
         if (address.toLowerCase().startsWith("udp://")) {
             ServerStatus status = checkUdpStatus(address);

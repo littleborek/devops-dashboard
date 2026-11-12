@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { Subject, Observable } from 'rxjs';
 
 export interface LogMessage {
@@ -12,17 +12,25 @@ export interface LogMessage {
     providedIn: 'root'
 })
 export class LogStreamService {
+    private readonly status = signal<'idle' | 'connecting' | 'open' | 'error'>('idle');
+    readonly connectionStatus = this.status.asReadonly();
     private logsSubject = new Subject<LogMessage>();
     public logs$: Observable<LogMessage> = this.logsSubject.asObservable();
     private eventSource: EventSource | null = null;
 
     connect(serverId: number): void {
         this.disconnect();
-        
-        // Backend'deki SSE (Server-Sent Events) endpoint'ine bağlanıyoruz
-        this.eventSource = new EventSource(`/api/v1/agent/logs/stream/${serverId}`);
-        
-        this.eventSource.onmessage = (event) => {
+        this.status.set('connecting');
+        let source: EventSource;
+        try { source = new EventSource(`/api/v1/agent/logs/stream/${serverId}`); }
+        catch { this.status.set('error'); return; }
+        this.eventSource = source;
+
+        source.onopen = () => {
+            if (this.eventSource === source) this.status.set('open');
+        };
+        source.onmessage = (event) => {
+            if (this.eventSource !== source) return;
             try {
                 const log: LogMessage = JSON.parse(event.data);
                 this.logsSubject.next(log);
@@ -31,9 +39,10 @@ export class LogStreamService {
             }
         };
 
-        this.eventSource.onerror = (error) => {
-            console.error('EventSource failed:', error);
+        source.onerror = () => {
+            if (this.eventSource !== source) return;
             this.disconnect();
+            this.status.set('error');
         };
     }
 
@@ -42,5 +51,6 @@ export class LogStreamService {
             this.eventSource.close();
             this.eventSource = null;
         }
+        this.status.set('idle');
     }
 }

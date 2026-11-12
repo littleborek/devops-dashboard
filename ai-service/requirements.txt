@@ -1,7 +1,6 @@
-crewai
+crewai==1.14.4
 fastapi
 uvicorn
-langchain_openai
 httpx
 pydantic
 langgraph
@@ -10,6 +9,5 @@ python-dotenv
 mcp
 pytest
 pytest-asyncio
-httpx
 
 

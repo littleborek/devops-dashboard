@@ -1,0 +1,29 @@
+.login-page { min-height:100dvh; display:flex; flex-direction:column; }
+.login-nav, footer { padding:1.5rem clamp(1.25rem,5vw,5rem); display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+.login-brand { display:flex; align-items:center; gap:.7rem; font-weight:700; text-decoration:none; color:var(--ink); }
+.login-brand > span { background:var(--accent); color:var(--accent-contrast); padding:.4rem .65rem; border-radius:.6rem; font-family:'Archivo Black',sans-serif; }
+.login-main { max-width:1360px; width:100%; margin:auto; padding:3rem clamp(1.25rem,5vw,5rem); display:grid; grid-template-columns:1.2fr 1fr; gap:clamp(3rem,7vw,8rem); align-items:center; }
+.intro { animation:arrive .5s ease-out both; }
+.intro h1 { font-size:clamp(2.7rem,5.2vw,5.5rem); margin:1.5rem 0; }
+.intro h1 span { color:var(--accent); }
+.intro-description { max-width:33rem; line-height:1.8; color:var(--muted); }
+.signal-art { margin-top:3rem; max-width:30rem; padding:1.3rem; border:1px solid var(--border); border-radius:1rem; background:linear-gradient(120deg,var(--surface),var(--surface-alt)); transform:rotate(-2deg); }
+.signal-top, .signal-bottom { display:flex; justify-content:space-between; font: .6rem 'IBM Plex Mono',monospace; letter-spacing:.08em; color:var(--muted); }
+.signal-bars { height:6.5rem; display:flex; align-items:flex-end; gap:3%; padding:1rem 0; }
+.signal-bars i { flex:1; height:35%; border-radius:3px 3px 0 0; background:var(--accent); opacity:.75; }
+.signal-bars i:nth-child(3n) { height:65%; opacity:1; }
+.signal-bars i:nth-child(4n) { height:90%; }
+.signal-bars i:nth-child(5n) { height:48%; background:var(--danger); }
+.login-card { padding:clamp(1.5rem,3vw,3rem); animation:arrive .5s .1s ease-out both; }
+.login-card h2 { font-size:clamp(1.8rem,2.4vw,2.5rem); margin:1rem 0; }
+.login-card > p.ops-muted { line-height:1.6; }
+.login-card form { display:flex; flex-direction:column; margin-top:2rem; }
+.login-card label { font-size:.85rem; font-weight:600; margin-bottom:.5rem; }
+.login-card input { margin-bottom:1.3rem; }
+.login-card button { margin-top:.5rem; justify-content:space-between; }
+.login-card .ops-alert { margin-top:1rem; font-size:.85rem; }
+.login-note { margin-top:1.5rem; padding-top:1.3rem; border-top:1px solid var(--border); font-size:.75rem; color:var(--muted); line-height:1.6; }
+footer { font-size:.7rem; color:var(--muted); }
+@keyframes arrive { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+@media(max-width:800px) { .login-main { grid-template-columns:1fr; max-width:600px; gap:2rem; padding-top:1rem; } .signal-art { display:none; } .intro h1 { font-size:2.8rem; } .intro-description { font-size:.9rem; } }
+@media(max-width:420px) { .login-brand { font-size:.7rem; } .login-brand > span { display:none; } .login-nav { padding:1rem; } footer { flex-direction:column; align-items:flex-start; } }

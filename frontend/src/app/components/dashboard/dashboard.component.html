@@ -1,0 +1,310 @@
+<app-navbar (navClick)="onNavClick($event)" (logout)="onLogout()"></app-navbar>
+
+<main class="dashboard">
+    <header class="hero">
+        <div>
+            <p class="ops-eyebrow">{{ ui.text('OPERASYON KONSOLU', 'OPERATIONS CONSOLE') }}</p>
+            <h1 class="ops-heading">{{ ui.text('Altyapı nöbeti', 'Infrastructure watch') }}</h1>
+        </div>
+        <button class="ops-button" type="button" (click)="openModal('new-server')">+ {{ ui.text('Sunucu ekle', 'Add server') }}</button>
+    </header>
+
+    <nav class="sections" [attr.aria-label]="ui.text('Altyapı görünümleri', 'Infrastructure views')">
+        @for (tab of tabs; track tab.id) {
+            <button type="button" [attr.aria-current]="currentTab() === tab.id ? 'true' : null" (click)="currentTab.set(tab.id)">
+                {{ ui.text(tab.tr, tab.en) }}
+            </button>
+        }
+    </nav>
+
+    @switch (currentTab()) {
+        @case ('servers') {
+            <section class="ops-card panel" aria-labelledby="server-heading">
+                <header class="panel-heading">
+                    <div>
+                        <p class="ops-eyebrow">01 / {{ ui.text('ENVANTER', 'INVENTORY') }}</p>
+                        <h2 id="server-heading" class="ops-heading">{{ ui.text('Sunucular', 'Servers') }}</h2>
+                    </div>
+                    @if (lastUpdated(); as time) {
+                        <p class="ops-muted timestamp">{{ ui.text('Son veri alımı', 'Last fetch') }} · {{ time | date:'HH:mm:ss' }}</p>
+                    }
+                </header>
+                @if (loading()) {
+                    <p class="state" role="status">{{ ui.text('Sunucular yükleniyor…', 'Loading servers…') }}</p>
+                } @else if (serverError()) {
+                    <div class="state warning" role="alert">
+                        <p>{{ ui.text('Sunucu verileri alınamadı.', 'Server data could not be loaded.') }}</p>
+                        <button class="ops-button-secondary" type="button" (click)="loadServers()">{{ ui.text('Yeniden dene', 'Retry') }}</button>
+                    </div>
+                } @else {
+                    @for (server of servers(); track server.id) {
+                        <article class="server-row">
+                            <div class="server-identity">
+                                <a class="server-name" [routerLink]="['/server', server.id]">{{ server.name }}</a>
+                                <p class="ops-muted metadata">{{ server.ipAddress }} · {{ !server.category || server.category === 'Genel' ? ui.text('Genel', 'General') : server.category }}</p>
+                                <span class="badge" [class.warning]="server.status === 'OFFLINE'">{{ statusLabel(server.status) }}</span>
+                                @if (server.telemetryStatus === 'STALE') {
+                                    <span class="ops-muted metadata">{{ ui.text('Son ölçüm eski', 'Telemetry is stale') }}</span>
+                                } @else if (server.telemetryStatus === 'FRESH') {
+                                    <span class="ops-muted metadata">{{ ui.text('Telemetri güncel', 'Telemetry is fresh') }}</span>
+                                } @else if (server.telemetryStatus === 'NONE') {
+                                    <span class="ops-muted metadata">{{ ui.text('Telemetri alınmadı', 'No telemetry received') }}</span>
+                                }
+                            </div>
+                            <div class="meters">
+                                <ng-container *ngTemplateOutlet="meter; context: { label: 'CPU', value: server.status === 'ONLINE' ? metric(server.cpuUsage) : null, high: exceedsThreshold(server.cpuUsage, server.cpuUsageThreshold) }"></ng-container>
+                                <ng-container *ngTemplateOutlet="meter; context: { label: 'RAM', value: server.status === 'ONLINE' ? metric(server.ramUsage) : null, high: exceedsThreshold(server.ramUsage, server.ramUsageThreshold) }"></ng-container>
+                            </div>
+                            <div class="actions">
+                                @if (server.status === 'ONLINE' && server.lastResponseTime > 0) {
+                                    <span class="ops-muted metadata">{{ server.lastResponseTime }} ms</span>
+                                }
+                                <button type="button" class="ops-button-secondary" (click)="openModal('edit', server)" [attr.aria-label]="ui.text('Düzenle', 'Edit') + ': ' + server.name">{{ ui.text('Düzenle', 'Edit') }}</button>
+                                <button type="button" class="ops-button-secondary danger" (click)="openModal('delete', server)" [attr.aria-label]="ui.text('Sil', 'Delete') + ': ' + server.name">{{ ui.text('Sil', 'Delete') }}</button>
+                            </div>
+                        </article>
+                    } @empty {
+                        <div class="state">
+                            <p>{{ ui.text('Henüz sunucu eklenmemiş.', 'No servers have been added.') }}</p>
+                            <button class="ops-button-secondary" type="button" (click)="openModal('new-server')">{{ ui.text('İlk sunucuyu ekle', 'Add your first server') }}</button>
+                        </div>
+                    }
+                }
+            </section>
+            <section class="ops-card panel" aria-labelledby="problem-heading">
+                <header class="panel-heading">
+                    <div>
+                        <p class="ops-eyebrow">02 / {{ ui.text('DİKKAT GEREKTİRENLER', 'NEEDS ATTENTION') }}</p>
+                        <h2 class="ops-heading" id="problem-heading">{{ ui.text('Sunucu sorunları', 'Server issues') }}</h2>
+                    </div>
+                </header>
+                @if (loading() || serverError() || !servers().length) {
+                    <p class="state ops-muted">{{ ui.text('Sorun değerlendirmesi için sunucu verisi gerekli.', 'Server data is needed to assess issues.') }}</p>
+                } @else {
+                    @for (problem of problems(); track problem.server.id + ':' + problem.kind) {
+                        <div class="issue warning">
+                            <a [routerLink]="['/server', problem.server.id]">{{ problem.server.name }}</a>
+                            @switch (problem.kind) {
+                                @case ('offline') { <span>{{ ui.text('Sunucu çevrimdışı', 'Server offline') }}</span> }
+                                @case ('cpu') { <span>{{ ui.text('Yüksek CPU kullanımı', 'High CPU usage') }} · {{ problem.server.cpuUsage | number:'1.0-1' }}%</span> }
+                                @case ('ram') { <span>{{ ui.text('Yüksek RAM kullanımı', 'High RAM usage') }} · {{ problem.server.ramUsage | number:'1.0-1' }}%</span> }
+                            }
+                        </div>
+                    } @empty {
+                        <p class="state ops-muted">{{ ui.text('Alınan verilerde eşik aşımı veya çevrimdışı sunucu görülmedi.', 'No threshold breaches or offline servers were detected in the available data.') }}</p>
+                    }
+                }
+            </section>
+        }
+        @case ('docker') {
+            <section class="ops-card panel" aria-labelledby="docker-heading">
+                <h2 class="ops-heading" id="docker-heading">Docker</h2>
+                @if (dockerLoading()) {
+                    <p class="state" role="status">{{ ui.text('Konteynerler yükleniyor…', 'Loading containers…') }}</p>
+                } @else if (dockerError()) {
+                    <ng-container *ngTemplateOutlet="fetchError"></ng-container>
+                } @else {
+                    <div class="inventory">
+                        @for (item of dockerData(); track $index) {
+                            <article>
+                                <h3>{{ item.name }}</h3>
+                                <span class="badge">{{ statusLabel(item.state) }}</span>
+                                <dl>
+                                    <dt>{{ ui.text('Sunucu', 'Server') }}</dt><dd>{{ item.serverName || '—' }}</dd>
+                                    <dt>{{ ui.text('İmaj', 'Image') }}</dt><dd>{{ item.image || '—' }}</dd>
+                                    <dt>ID</dt><dd>{{ (item.containerId | slice:0:12) || '—' }}</dd>
+                                    <dt>{{ ui.text('Güncelleme', 'Updated') }}</dt><dd>{{ (item.lastUpdated | date:'HH:mm:ss') || '—' }}</dd>
+                                </dl>
+                            </article>
+                        } @empty {
+                            <p class="state ops-muted">{{ ui.text('Docker konteyneri bulunamadı.', 'No Docker containers found.') }}</p>
+                        }
+                    </div>
+                }
+            </section>
+        }
+        @case ('k8s') {
+            <section class="ops-card panel" aria-labelledby="k8s-heading">
+                <h2 class="ops-heading" id="k8s-heading">Kubernetes</h2>
+                @if (k8sLoading()) {
+                    <p class="state" role="status">{{ ui.text('Pod’lar yükleniyor…', 'Loading pods…') }}</p>
+                } @else if (k8sError()) {
+                    <ng-container *ngTemplateOutlet="fetchError"></ng-container>
+                } @else {
+                    <div class="inventory">
+                        @for (pod of k8sPods(); track $index) {
+                            <article>
+                                <h3>{{ pod.name }}</h3>
+                                <span class="badge">{{ statusLabel(pod.phase) }}</span>
+                                <dl>
+                                    <dt>{{ ui.text('Ad alanı', 'Namespace') }}</dt><dd>{{ pod.namespace || '—' }}</dd>
+                                    <dt>{{ ui.text('Düğüm', 'Node') }}</dt><dd>{{ pod.nodeName || '—' }}</dd>
+                                    <dt>{{ ui.text('Oluşturulma', 'Created') }}</dt><dd>{{ (pod.creationTimestamp | date:'dd/MM HH:mm') || '—' }}</dd>
+                                </dl>
+                            </article>
+                        } @empty {
+                            <p class="state ops-muted">{{ ui.text('Kubernetes pod’u bulunamadı.', 'No Kubernetes pods found.') }}</p>
+                        }
+                    </div>
+                }
+            </section>
+        }
+        @case ('mcp') {
+            <section class="ops-card panel" aria-labelledby="mcp-heading">
+                <h2 class="ops-heading" id="mcp-heading">Model Context Protocol</h2>
+                <p class="ops-muted">{{ ui.text('MCP yerel istemci tarafından stdio üzerinden başlatılır; panel bağlantı durumunu doğrulamaz.', 'MCP is launched by the local client over stdio; this dashboard does not verify its connection status.') }}</p>
+                <p class="badge" [class.warning]="backendStatus() === 'error'">
+                    @switch (backendStatus()) {
+                        @case ('loading') { {{ ui.text('Backend sağlığı sorgulanıyor…', 'Checking backend health…') }} }
+                        @case ('up') { {{ ui.text('Backend sağlık kontrolü başarılı', 'Backend health check passed') }} }
+                        @case ('error') { {{ ui.text('Backend sağlığı doğrulanamadı', 'Backend health could not be verified') }} }
+                    }
+                </p>
+                <h3>{{ ui.text('Araçlar ve kaynaklar', 'Tools and resources') }}</h3>
+                <div class="inventory">
+                    @for (item of mcpTools; track item.name) {
+                        <article><code>{{ item.name }}</code><p>{{ ui.text(item.tr, item.en) }}</p></article>
+                    }
+                </div>
+                <p class="ops-muted">{{ ui.text('Uyumlu istemciler', 'Compatible clients') }}: Claude Desktop, Cursor, MCP Inspector, VS Code</p>
+            </section>
+        }
+    }
+</main>
+
+<ng-template #meter let-label="label" let-value="value" let-high="high">
+    <div class="meter">
+        <div class="meter-label">
+            <span>{{ label }}</span>
+            @if (value !== null) {
+                <strong>{{ value | number:'1.0-1' }}%</strong>
+            } @else {
+                <span class="ops-muted">{{ ui.text('Veri yok', 'No data') }}</span>
+            }
+        </div>
+        @if (value !== null) {
+            <meter min="0" max="100" [value]="value" [class.high]="high" [attr.aria-label]="label"></meter>
+        }
+    </div>
+</ng-template>
+
+<ng-template #fetchError>
+    <div class="state warning" role="alert">
+        <p>{{ ui.text('Veriler alınamadı.', 'Data could not be loaded.') }}</p>
+        <button class="ops-button-secondary" type="button" (click)="loadServers()">{{ ui.text('Yeniden dene', 'Retry') }}</button>
+    </div>
+</ng-template>
+
+<dialog #modal class="ops-card modal" aria-labelledby="dialog-heading" (cancel)="cancelModal($event)">
+    <header class="panel-heading">
+        <h2 class="ops-heading" id="dialog-heading">
+            @switch (modalKind()) {
+                @case ('new-server') { {{ ui.text('Sunucu ekle', 'Add server') }} }
+                @case ('edit') { {{ ui.text('Sunucuyu düzenle', 'Edit server') }} }
+                @case ('delete') { {{ ui.text('Sunucuyu sil', 'Delete server') }} }
+                @case ('setup') { {{ ui.text('Ajan kurulumu', 'Agent setup') }} }
+                @case ('settings') { {{ ui.text('Sistem ayarları', 'System settings') }} }
+            }
+        </h2>
+        <button type="button" autofocus class="ops-button-secondary" [disabled]="busy()" (click)="closeModal()">{{ ui.text('Kapat', 'Close') }}</button>
+    </header>
+    @switch (modalKind()) {
+        @case ('setup') {
+            <div class="dialog-body">
+                <label>{{ ui.text('Ajan işletim sistemi', 'Agent operating system') }}
+                    <select class="ops-input" [(ngModel)]="setupOs">
+                        <option value="linux">Linux</option>
+                        <option value="windows">Windows</option>
+                    </select>
+                </label>
+                @if (setupOs === 'windows') {
+                    <p>{{ ui.text('Önce Windows cihazını panele ekleyin. Aşağıda kayıtlı adresi ve SSH kullanıcı adını girin.', 'Register the Windows device first, then enter its registered address and SSH username below.') }}</p>
+                    <label>{{ ui.text('Windows adresi', 'Windows address') }}<input class="ops-input" [(ngModel)]="windowsSetupHost" placeholder="192.168.1.19"></label>
+                    <label>{{ ui.text('SSH kullanıcı adı', 'SSH username') }}<input class="ops-input" [(ngModel)]="windowsSetupUser" autocomplete="off"></label>
+                    @if (windowsSetup; as commands) {
+                        <p>{{ ui.text('1. Bu komutu panelin çalıştığı Mac Terminal’de çalıştırın.', '1. Run this in Terminal on the Mac hosting the dashboard.') }}</p>
+                        <code class="command">{{ commands.tunnel }}</code>
+                        <button type="button" class="ops-button-secondary" (click)="copyToClipboard(commands.tunnel)">{{ ui.text('SSH komutunu kopyala', 'Copy SSH command') }}</button>
+                        <p>{{ ui.text('2. Windows SSH oturumunda powershell yazın ve aşağıdaki bloğu yapıştırın.', '2. In the Windows SSH session, type powershell and paste the block below.') }}</p>
+                        <pre class="command">{{ commands.telemetry }}</pre>
+                        <button type="button" class="ops-button-secondary" (click)="copyToClipboard(commands.telemetry)">{{ ui.text('PowerShell bloğunu kopyala', 'Copy PowerShell block') }}</button>
+                    }
+                    <p>{{ ui.text('15 saniyede bir CPU/RAM gönderir. Docker veya cron gerekmez. Oturum açık kalmalı; Ctrl+C durdurur. Kalıcı görev kurmaz.', 'Sends CPU/RAM every 15 seconds. No Docker or cron required. Keep the session open; Ctrl+C stops it. No persistent task is installed.') }}</p>
+                } @else {
+                <p>{{ ui.text('Önce sunucuyu panele ekleyin. Linux sunucuda ajan betiğini indirin, inceleyin ve çalıştırın.', 'Add the server first. On the Linux server, download, review and run the agent script.') }}</p>
+                <code class="command">{{ installCmd }}</code>
+                <button type="button" class="ops-button-secondary" (click)="copyToClipboard(installCmd)">{{ ui.text('İndirme komutunu kopyala', 'Copy download command') }}</button>
+                <code class="command">cat "$installer"</code>
+                <code class="command">bash "$installer"</code>
+                <p>{{ ui.text('Ajanı kaldırmak için ajanı kuran kullanıcıyla aşağıdaki komutu çalıştırın.', 'To remove the agent, run the command below as the user who installed it.') }}</p>
+                <code class="command">{{ uninstallCmd }}</code>
+                <button type="button" class="ops-button-secondary" (click)="copyToClipboard(uninstallCmd)">{{ ui.text('Kaldırma komutunu kopyala', 'Copy uninstall command') }}</button>
+                <p>{{ ui.text('Sonra kurulum kullanıcısına ait ajan dosyasını silin (normal kullanıcı / root):', 'Then delete the agent file for the installing user (regular user / root):') }}</p>
+                <code class="command">/tmp/devops_agent.sh · /usr/local/bin/devops_agent.sh</code>
+                }
+            </div>
+        }
+        @case ('delete') {
+            <p>{{ ui.text('Bu sunucu kaydı silinecek:', 'This server record will be deleted:') }} <strong>{{ serverToDelete?.name }}</strong></p>
+            <div class="actions">
+                <button type="button" class="ops-button-secondary" [disabled]="busy()" (click)="closeModal()">{{ ui.text('Vazgeç', 'Cancel') }}</button>
+                <button type="button" class="ops-button-secondary warning" [disabled]="busy()" (click)="confirmDeleteServer()">{{ ui.text('Sunucuyu sil', 'Delete server') }}</button>
+            </div>
+        }
+        @case ('settings') {
+            <div class="dialog-body">
+                <div class="actions">
+                    <a class="ops-button-secondary" href="/actuator/prometheus" target="_blank" rel="noopener">Prometheus</a>
+                    <a class="ops-button-secondary" href="/actuator/health" target="_blank" rel="noopener">{{ ui.text('Sağlık kontrolü', 'Health check') }}</a>
+                </div>
+                <form class="settings-form" (ngSubmit)="saveAiConfig()">
+                    <h3>{{ ui.text('Yapay zekâ', 'AI engine') }}</h3>
+                    <label>{{ ui.text('Sağlayıcı', 'Provider') }}
+                        <select class="ops-input" [(ngModel)]="aiConfig.provider" name="provider">
+                            <option value="CLOUD">{{ ui.text('Bulut', 'Cloud') }}</option>
+                            <option value="LOCAL">{{ ui.text('Yerel (LM Studio / Ollama)', 'Local (LM Studio / Ollama)') }}</option>
+                            <option value="CREW_AI">CrewAI</option>
+                        </select>
+                    </label>
+                    <label>{{ ui.text('API anahtarı (isteğe bağlı)', 'API key (optional)') }}<input class="ops-input" type="password" autocomplete="off" [(ngModel)]="aiConfig.apiKey" name="apiKey"></label>
+                    <label>{{ ui.text('Uç nokta URL’si', 'Endpoint URL') }}<input class="ops-input" [(ngModel)]="aiConfig.endpointUrl" name="endpointUrl"></label>
+                    <button class="ops-button" type="submit" [disabled]="busy()">{{ ui.text('AI ayarlarını kaydet', 'Save AI settings') }}</button>
+                </form>
+                <form class="settings-form" (ngSubmit)="saveTelegramConfig()" #telegramForm="ngForm">
+                    <h3>{{ ui.text('Telegram entegrasyonu', 'Telegram integration') }}</h3>
+                    @if (telegramLoading()) {
+                        <p role="status">{{ ui.text('Telegram ayarları yükleniyor…', 'Loading Telegram settings…') }}</p>
+                    } @else if (telegramError()) {
+                        <button type="button" class="ops-button-secondary" (click)="loadTelegramConfig()">{{ ui.text('Telegram ayarlarını yeniden yükle', 'Retry loading Telegram settings') }}</button>
+                    }
+                    <label>{{ ui.text('Bot anahtarı', 'Bot token') }}<input class="ops-input" type="password" autocomplete="off" [(ngModel)]="telegramConfig.token" name="token" [disabled]="telegramLoading() || busy()" required></label>
+                    <label>{{ ui.text('Sohbet kimliği', 'Chat ID') }}<input class="ops-input" [(ngModel)]="telegramConfig.chatId" name="chatId" [disabled]="telegramLoading() || busy()" required></label>
+                    <button class="ops-button" type="submit" [disabled]="telegramForm.invalid || telegramLoading() || busy()">{{ ui.text('Telegram ayarlarını kaydet', 'Save Telegram settings') }}</button>
+                </form>
+            </div>
+        }
+        @default {
+            @if (modalKind() === 'new-server' || modalKind() === 'edit') {
+                <form class="dialog-body" (ngSubmit)="saveServer()" #serverForm="ngForm">
+                    <label>{{ ui.text('Sunucu adı', 'Server name') }}<input class="ops-input" [(ngModel)]="formServer.name" name="name" required></label>
+                    <label>{{ ui.text('IP adresi veya ana makine adı', 'IP address or hostname') }}<input class="ops-input" [(ngModel)]="formServer.ipAddress" name="ipAddress" required></label>
+                    <label>{{ ui.text('İşletim sistemi', 'Operating system') }}<input class="ops-input" [(ngModel)]="formServer.operatingSystem" name="os" required></label>
+                    <label>{{ ui.text('Konum', 'Location') }}<input class="ops-input" [(ngModel)]="formServer.location" name="location"></label>
+                    <label>{{ ui.text('Kategori', 'Category') }}<input class="ops-input" [(ngModel)]="formServer.category" name="category"></label>
+                    <label class="checkbox"><input type="checkbox" [(ngModel)]="formServer.skipSslCheck" name="skipSslCheck">{{ ui.text('SSL doğrulamasını atla', 'Skip SSL verification') }}</label>
+                    <button class="ops-button" type="submit" [disabled]="serverForm.invalid || busy() || !formServer.name?.trim() || !formServer.ipAddress?.trim() || !formServer.operatingSystem?.trim()">{{ ui.text('Kaydet', 'Save') }}</button>
+                </form>
+            }
+        }
+    }
+    <div aria-live="polite">
+        @if (busy()) { <p>{{ ui.text('İşlem sürüyor…', 'Working…') }}</p> }
+        @switch (feedback()) {
+            @case ('saved') { <p>{{ ui.text('Ayarlar kaydedildi.', 'Settings saved.') }}</p> }
+            @case ('copied') { <p>{{ ui.text('Panoya kopyalandı.', 'Copied to clipboard.') }}</p> }
+            @case ('error') { <p class="warning state">{{ ui.text('İşlem tamamlanamadı. Yeniden deneyin.', 'The operation failed. Try again.') }}</p> }
+            @case ('copy-error') { <p class="warning state">{{ ui.text('Panoya erişilemedi; komutu elle kopyalayın.', 'Clipboard unavailable; copy the command manually.') }}</p> }
+            @case ('settings-error') { <p class="warning state">{{ ui.text('Telegram ayarları alınamadı.', 'Telegram settings could not be loaded.') }}</p> }
+        }
+    </div>
+</dialog>

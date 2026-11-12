@@ -25,13 +25,13 @@ public class OrchestrationController {
 
     @GetMapping("/docker")
     public ResponseEntity<List<DockerContainer>> getDockerContainers() {
-        List<DockerContainer> containers = dockerRepository.findAll();
+        List<DockerContainer> containers = dockerRepository.findCurrent();
         return ResponseEntity.ok(containers);
     }
     
     @GetMapping("/docker/server/{serverId}")
     public ResponseEntity<List<DockerContainer>> getDockerContainersByServer(@PathVariable Long serverId) {
-        return ResponseEntity.ok(dockerRepository.findByServerId(serverId));
+        return ResponseEntity.ok(dockerRepository.findCurrentByServerId(serverId));
     }
 }
 

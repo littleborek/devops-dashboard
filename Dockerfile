@@ -19,6 +19,7 @@ ENV DB_URL="jdbc:h2:file:./data/dashboarddb"
 ENV DB_USER="sa"
 ENV DB_PASS=""
 ENV DISCORD_WEBHOOK_URL=""
+ENV CREW_AI_ENDPOINT="http://host.docker.internal:8000"
 
 
 VOLUME /app/data

@@ -1,0 +1,27 @@
+.detail { width: min(calc(100% - 2rem), 76rem); margin-inline: auto; display: grid; gap: 1.15rem; padding-block: clamp(1.5rem, 4vw, 3.5rem) 5rem; }
+.detail > .ops-card { padding: clamp(1rem, 3vw, 1.75rem); }
+.detail .ops-eyebrow, .detail .ops-muted { margin-block: .4rem; }
+.hero, header, .actions { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
+.hero, header { justify-content: space-between; }
+.hero div { min-width: 0; overflow-wrap: anywhere; }
+h1, h2 { margin: 0; }
+h1 { font-size: clamp(1.85rem, 5vw, 3.6rem); line-height: 1.08; }
+h2 { font-size: clamp(1.15rem, 3vw, 1.7rem); line-height: 1.2; }
+.badge, .metrics > div { padding: .6rem .8rem; border-radius: .65rem; background: var(--surface-alt); }
+.danger { background: var(--danger-bg); color: var(--danger); }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); gap: .7rem; margin-bottom: 0; }
+dd { margin: .35rem 0 0; font: 600 1.25rem 'IBM Plex Mono', monospace; }
+.deployments { list-style: none; padding: 0; margin-bottom: 0; }
+.deployments li { display: grid; grid-template-columns: 2fr 1fr 1fr auto; align-items: center; gap: .55rem; padding: .65rem 0; border-top: 1px solid var(--border); overflow-wrap: anywhere; }
+dialog { width: min(calc(100% - 2rem), 42rem); max-height: calc(100dvh - 2rem); padding: 1.1rem; border: 1px solid var(--border); border-radius: .85rem; background: var(--surface); color: var(--ink); }
+dialog::backdrop { background: #14193488; }
+.warning, pre { padding: .7rem; border-radius: .5rem; }
+pre { background: var(--surface-alt); max-height: 42dvh; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: 'IBM Plex Mono', monospace; }
+form { display: grid; gap: .5rem; }
+form button { justify-self: start; }
+dialog input { width: 100%; }
+dialog label { display: block; margin-top: .6rem; }
+.log-actions { margin-top: .6rem; }
+.log-connection { margin-top: .75rem; }
+.log-connection + button { margin-top: .5rem; }
+@media (max-width: 42rem) { .deployments li { grid-template-columns: 1fr 1fr; } }

@@ -1,54 +1,48 @@
-import { Component, output } from '@angular/core';
+import { Component, inject, output } from '@angular/core';
+import { UiService } from '../../services/ui.service';
+import { PreferencesComponent } from '../preferences/preferences.component';
 
 @Component({
-    selector: 'app-navbar',
-    imports: [],
-    template: `
-    <nav class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-50 shadow-lg">
-        <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold text-blue-400 flex items-center cursor-pointer" (click)="onNavClick('servers')">
-                <i class="fa-solid fa-server mr-2"></i>
-                DevOps<span class="text-white">Dashboard</span>
-            </h1>
-            <div class="flex items-center space-x-3">
-                <button (click)="onNavClick('setup')"
-                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded shadow transition text-sm flex items-center">
-                    <i class="fa-solid fa-terminal mr-2"></i> Ajan Kurulumu
-                </button>
-                <a href="/actuator/prometheus" target="_blank"
-                    class="bg-orange-600/20 hover:bg-orange-600/40 text-orange-400 px-3 py-2 rounded text-sm transition flex items-center"
-                    title="Prometheus Metrikleri">
-                    <i class="fa-solid fa-chart-line mr-2"></i> Grafana/Prom
-                </a>
-                <button (click)="onNavClick('settings')"
-                    class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-sm text-gray-300 transition"
-                    title="Ayarlar">
-                    <i class="fa-solid fa-gear"></i>
-                </button>
-                <button (click)="onNavClick('new-server')"
-                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition text-sm flex items-center">
-                    <i class="fa-solid fa-plus mr-2"></i> <span class="hidden md:inline">Yeni Sunucu</span>
-                </button>
-                <button (click)="onLogout()"
-                    class="bg-red-600/20 hover:bg-red-600/40 text-red-400 px-3 py-2 rounded text-sm transition"
-                    title="Çıkış Yap">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                </button>
-            </div>
+  selector: 'app-navbar',
+  imports: [PreferencesComponent],
+  template: `
+    <nav class="navigation" [attr.aria-label]="ui.text('Ana menü', 'Main navigation')">
+      <div class="nav-inner">
+        <button type="button" class="brand" (click)="navClick.emit('servers')" aria-label="DevOps Dashboard">
+          <span class="brand-mark" aria-hidden="true">K.</span>
+          <span>DevOps <strong>Dashboard</strong><small>{{ ui.text('KOBALT NÖBET', 'COBALT WATCH') }}</small></span>
+        </button>
+        <app-preferences />
+        <div class="nav-actions">
+          <button type="button" class="ops-button-secondary" (click)="navClick.emit('setup')"><i class="fa-solid fa-terminal" aria-hidden="true"></i>{{ ui.text('Ajan kurulumu', 'Agent setup') }}</button>
+          <a href="/actuator/prometheus" target="_blank" rel="noopener" class="ops-button-secondary">{{ ui.text('Metrikler', 'Metrics') }}<span aria-hidden="true">↗</span></a>
+          <button type="button" class="ops-button-secondary" (click)="navClick.emit('settings')"><i class="fa-solid fa-gear" aria-hidden="true"></i>{{ ui.text('Ayarlar', 'Settings') }}</button>
+          <button type="button" class="ops-button" (click)="navClick.emit('new-server')"><span aria-hidden="true">+</span>{{ ui.text('Sunucu ekle', 'Add server') }}</button>
+          <button type="button" class="ops-button-secondary" (click)="logout.emit()" [attr.aria-label]="ui.text('Çıkış yap', 'Sign out')" [title]="ui.text('Çıkış yap', 'Sign out')"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i></button>
         </div>
+      </div>
     </nav>
   `,
-    styles: []
+  styles: [`
+    .navigation { background:var(--surface); border-bottom:1px solid var(--border); }
+    .nav-inner { max-width:1440px; margin:auto; padding:1rem clamp(1rem,3vw,3rem); display:flex; flex-wrap:wrap; align-items:center; gap:1rem; }
+    .brand { display:flex; align-items:center; gap:.7rem; text-align:left; margin-right:auto; color:var(--ink); background:none; border:0; }
+    .brand-mark { width:2.7rem; height:2.7rem; display:grid; place-items:center; background:var(--accent); color:var(--accent-contrast); border-radius:.65rem; font-family:'Archivo Black',sans-serif; font-size:1.4rem; }
+    .brand strong { font-weight:700; }
+    .brand small { display:block; margin-top:.2rem; color:var(--muted); font-size:.55rem; letter-spacing:.18em; font-family:'IBM Plex Mono',monospace; }
+    .nav-actions { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; }
+    @media(max-width:1150px) { .nav-actions { width:100%; } }
+    @media(max-width:480px) {
+      .nav-inner { gap:.75rem; } .brand { font-size:.8rem; } .brand-mark { display:none; }
+      .nav-actions { display:grid; grid-template-columns:1fr 1fr; }
+      .nav-actions > :last-child { grid-column:2; grid-row:2; justify-self:end; }
+      .nav-actions > :nth-child(3) { grid-column:1; grid-row:2; }
+      .nav-actions > :nth-child(4) { grid-column:1 / -1; }
+    }
+  `]
 })
 export class NavbarComponent {
-    navClick = output<string>();
-    logout = output<void>();
-
-    onNavClick(target: string) {
-        this.navClick.emit(target);
-    }
-
-    onLogout() {
-        this.logout.emit();
-    }
+  readonly ui = inject(UiService);
+  navClick = output<string>();
+  logout = output<void>();
 }

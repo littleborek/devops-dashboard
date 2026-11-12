@@ -53,7 +53,10 @@ public class ServerStatusMonitor {
             ServerStatus newStatus = serverService.checkServerStatus(server);
 
             server.setStatus(newStatus);
-            serverRepository.save(server);
+            if (serverRepository.updateProbeResult(server.getId(), server.getUpdatedAt(),
+                    newStatus, server.getLastResponseTime()) == 0) {
+                return;
+            }
 
             ServerHistory history = ServerHistory.builder()
                     .server(server)
@@ -78,7 +81,7 @@ public class ServerStatusMonitor {
                 markContainersOffline(server.getId());
             }
 
-            if (server.getStatus() == ServerStatus.ONLINE && !server.isMaintenanceMode()) {
+            if (server.hasFreshTelemetry(LocalDateTime.now()) && !server.isMaintenanceMode()) {
                 checkThresholds(server);
             }
 
@@ -88,7 +91,7 @@ public class ServerStatusMonitor {
     }
 
     private void markContainersOffline(Long serverId) {
-        var containers = containerRepository.findByServerId(serverId);
+        var containers = containerRepository.findCurrentByServerId(serverId);
         for (var c : containers) {
             if (!"offline".equals(c.getState())) {
                 c.setState("offline");
