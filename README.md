@@ -8,15 +8,7 @@
   <img src="docs/images/dashboard-current.png" alt="Güncel DevOps Dashboard sunucu envanteri; yerel ağ adresi gizlenmiştir" width="900">
 </p>
 
-### Ekran Görüntüleri / Screenshots
-
-| Sunucu envanteri / Server inventory | AI sohbeti / AI assistant |
-|---|---|
-| <img src="docs/images/dashboard-current.png" alt="Sunucu envanteri" width="640"> | <img src="docs/images/ai-chat-current.png" alt="AI sohbet paneli" width="640"> |
-
-| Ayarlar / Settings | Prometheus hedef sağlığı / Prometheus target health |
-|---|---|
-| <img src="docs/images/settings-current.png" alt="Hassas değer içermeyen ayarlar ekranı" width="640"> | <img src="docs/images/prometheus-current.png" alt="Dashboard scrape hedefi UP" width="640"> |
+Türkçe ve İngilizce arayüzlerin ayrıntılı ekran görüntüleri: [Türkçe galeri](#ekran-görüntüleri) · [English gallery](#screenshots)
 
 ## Türkçe
 
@@ -35,6 +27,26 @@ DevOps Dashboard; yerel veya uzak sunucuları, ajanlardan gelen telemetriyi, Doc
 - MCP sunucusu ile uyumlu istemcilere dashboard araçlarını sunma
 
 > Sunucu durum göstergesi telemetri tazeliğini ve bazı kontrolleri kullanır; yalnızca ping/HTTP yanıtı değildir. Windows'ta SSH portunun erişilebilir olması tek başına telemetri alındığı anlamına gelmez. Uzak sunucular kendiliğinden keşfedilmez; sunucuyu kaydedip uygun ajanı yapılandırmanız gerekir.
+
+### Ekran Görüntüleri
+
+Görüntüler çalışan yerel panelden alınmıştır. Yerel ağ adresleri ve makine adları gizlilik için anonimleştirilmiştir.
+
+| Genel bakış ve sunucu envanteri | Docker konteynerleri |
+|---|---|
+| ![Türkçe ana ekran: sunucu envanteri ve canlı metrikler](docs/images/dashboard-tr.png) | ![Türkçe Docker konteynerleri görünümü](docs/images/docker-tr.png) |
+
+| Kubernetes pod görünümü | MCP araçları |
+|---|---|
+| ![Türkçe Kubernetes görünümü](docs/images/kubernetes-tr.png) | ![Türkçe MCP araçları](docs/images/mcp-tr.png) |
+
+| Sunucu detayı ve telemetri | Seçili sunucu bağlamlı AI sohbeti |
+|---|---|
+| ![Türkçe sunucu detay sayfası](docs/images/server-detail-tr.png) | ![Türkçe sunucu bağlamı eklenmiş AI sohbet paneli](docs/images/ai-server-context-tr.png) |
+
+| Yapılandırma ayarları | Prometheus hedef sağlığı |
+|---|---|
+| ![Türkçe ayarlar sayfası; hassas değerler maskelenmiştir](docs/images/settings-tr.png) | ![Prometheus dashboard scrape hedefi UP](docs/images/prometheus-targets.png) |
 
 ### Hızlı Başlangıç
 
@@ -134,7 +146,25 @@ Grafana: [http://localhost:3000](http://localhost:3000) · Prometheus: [http://l
 
 See [`docs/monitoring.md`](docs/monitoring.md) for monitoring and Windows agent setup. Development, the Python AI service, and MCP instructions are in [`ai-service/README.md`](ai-service/README.md), [`mcp/README.md`](mcp/README.md), and [`frontend/README.md`](frontend/README.md).
 
-The screenshots above show the current dashboard, AI panel, settings with blank credentials, and a Prometheus target reporting `UP`. A Grafana dashboard screenshot is not included because the local Grafana instance requires an account login.
+### Screenshots
+
+These screenshots were captured from the running local dashboard. Local network addresses and host names are anonymized. Prometheus is shown in its native English interface.
+
+| Dashboard and server inventory | Docker containers |
+|---|---|
+| ![English dashboard: server inventory and live metrics](docs/images/dashboard-en.png) | ![English Docker containers view](docs/images/docker-en.png) |
+
+| Kubernetes pods | MCP tools |
+|---|---|
+| ![English Kubernetes view](docs/images/kubernetes-en.png) | ![English MCP tools view](docs/images/mcp-en.png) |
+
+| Server details and telemetry | Server-aware AI chat |
+|---|---|
+| ![English server detail page](docs/images/server-detail-en.png) | ![English AI chat with selected-server context](docs/images/ai-server-context-en.png) |
+
+| Configuration settings | Prometheus target health |
+|---|---|
+| ![English settings page with sensitive values masked](docs/images/settings-en.png) | ![Prometheus dashboard scrape target reporting UP](docs/images/prometheus-targets.png) |
 
 ### AI Providers
 
