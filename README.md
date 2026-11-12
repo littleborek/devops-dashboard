@@ -1,356 +1,170 @@
-# 🚀 AI-Ops Dashboard
+# DevOps Dashboard
 
-[English](#english) | [Türkçe](#türkçe)
+**A self-hosted dashboard for server telemetry, Docker and Kubernetes inventory, monitoring, and user-initiated AI-assisted operations.**
 
----
+[Türkçe](#türkçe) · [English](#english)
 
-<a name="english"></a>
-## 🇬🇧 English
+<p align="center">
+  <img src="docs/images/dashboard-current.png" alt="Güncel DevOps Dashboard sunucu envanteri; yerel ağ adresi gizlenmiştir" width="900">
+</p>
 
-### 🎯 What is it?
-The **"AI-Ops Dashboard"** is a high-performance infrastructure monitoring and diagnostic ecosystem. Its primary objective is to solve the "context gap" in server management. While traditional tools notify you that a service is down, this platform leverages Artificial Intelligence to explain **why** it happened. By centralizing telemetry from remote servers (Oracle Cloud, AWS, or local nodes), the dashboard provides a unified view of system health and automated incident response.
+### Ekran Görüntüleri / Screenshots
 
-### 👤 Target Users
-*   **DevOps Engineers & SREs**: Who require rapid Root Cause Analysis (RCA) and remote command execution.
-*   **Home-lab Enthusiasts**: Users managing complex local clusters (Docker/K8s) who need an intelligent notification layer.
-*   **System Administrators**: Who need to monitor servers behind restrictive firewalls without exposing high-risk ports.
+| Sunucu envanteri / Server inventory | AI sohbeti / AI assistant |
+|---|---|
+| <img src="docs/images/dashboard-current.png" alt="Sunucu envanteri" width="640"> | <img src="docs/images/ai-chat-current.png" alt="AI sohbet paneli" width="640"> |
 
-### ✨ Core AI-Ops Features
-*   **CrewAI Routing**: Runs one to three agents based on query complexity.
-*   **Smart Endpoint Resolution**: Just enter your LM Studio IP (e.g., `100.95.111.63`) — the system automatically appends the correct port and path.
-*   **Terminal-style AI Chatbot**: Streaming responses with proper whitespace rendering, bold/code markdown support.
-*   **Root Cause Analysis (RCA)**: Automated packaging of server metrics to query AI and display human-readable explanations.
-*   **Task Execution Queue & Command Signing**: Secure polling system where remote agents pull RSA-signed commands.
-*   **WebSocket Live Log Streaming**: View remote Docker container logs in real-time via WebSocket (no disk writes).
-*   **mTLS Security (Mutual TLS)**: Spring Boot backend only accepts connections from clients with valid X.509 certificates.
-*   **Telegram & Discord Alerts**: Dual notification bridge for critical server states.
+| Ayarlar / Settings | Prometheus hedef sağlığı / Prometheus target health |
+|---|---|
+| <img src="docs/images/settings-current.png" alt="Hassas değer içermeyen ayarlar ekranı" width="640"> | <img src="docs/images/prometheus-current.png" alt="Dashboard scrape hedefi UP" width="640"> |
 
-### 🏗️ Architecture
-*   **Frontend (Angular 21)**: Streaming AI chat, notification hub, settings management.
-*   **Backend (Spring Boot / Java 17)**: Orchestrates tasks, bridges to Telegram, packages AI contexts.
-*   **AI Service (Python / LangGraph / CrewAI)**: Intelligent core with hybrid routing.
-*   **Remote Agent (Bash/Python)**: Polls for tasks, executes commands securely, reports back.
+## Türkçe
 
----
+DevOps Dashboard; yerel veya uzak sunucuları, ajanlardan gelen telemetriyi, Docker konteynerlerini ve Kubernetes podlarını tek panelde takip etmek için self-hosted bir uygulamadır. İsteğe bağlı AI sohbeti, seçili sunucu bağlamıyla analiz yapabilir. Basit istekler tek ajanla, karmaşık teşhisler gerektiğinde 2–3 CrewAI ajanıyla işlenir.
 
-### 🧠 AI Engine & Orchestration
+### Özellikler
 
-This system uses a **Hybrid Orchestration** approach beyond simple LLM prompts:
+- Sunucu listesi, çevrimiçi/çevrimdışı/bilinmiyor durumu, CPU/RAM/disk metrikleri ve geçmiş verileri
+- Linux sunucular için Docker telemetrisi; Kubernetes pod görünümü
+- Windows için PowerShell telemetri betiği ve SSH erişilebilirliğine dayalı ikincil durum kontrolü
+- Kullanıcı isteğiyle başlatılan, seçili sunucu bağlamlı AI sohbeti; yerel, bulut ve CrewAI sağlayıcıları
+- CrewAI/LangGraph sorgu yönlendirmesi: basit sorularda tek ajan, gerekli olduğunda çoklu ajan
+- Prometheus metrik endpoint'i ve isteğe bağlı Grafana/Prometheus Compose profili
+- Sunucu detayları, canlı telemetri, görev kuyruğu ve ayarlanabilir Telegram bildirimleri
+- Türkçe varsayılan arayüz, İngilizce seçeneği ve açık/koyu tema
+- MCP sunucusu ile uyumlu istemcilere dashboard araçlarını sunma
 
-| Query Type | Route | Engine |
-|---|---|---|
-| Greetings, simple info | SIMPLE | DevOps Engineer |
-| Error analysis, diagnostics | DIAGNOSTIC | Telemetry Analyst + DevOps Engineer |
-| Major outages, multi-system incidents | INCIDENT | Telemetry Analyst + Incident Reviewer + DevOps Engineer |
+> Sunucu durum göstergesi telemetri tazeliğini ve bazı kontrolleri kullanır; yalnızca ping/HTTP yanıtı değildir. Windows'ta SSH portunun erişilebilir olması tek başına telemetri alındığı anlamına gelmez. Uzak sunucular kendiliğinden keşfedilmez; sunucuyu kaydedip uygun ajanı yapılandırmanız gerekir.
 
-*   **LangGraph Orchestrator**: Routes basic greetings immediately and classifies other queries via the configured model, with keyword routing if classification fails.
-*   **Local Inference**: Optimized for **Mistral NeMo 12B** or **Llama-3.1-8B** via **LM Studio**, ensuring 100% data privacy.
+### Hızlı Başlangıç
 
----
+Gereksinimler: Docker ve Docker Compose. Dashboard ile PostgreSQL'i başlatın:
 
-### 🚀 Setup & Quick Start
-
-#### 📋 Prerequisites
-*   Java 17 or higher
-*   Docker & Docker Compose
-*   Python 3.11+ (for AI Service)
-*   Node.js 20+ (for frontend build)
-*   **LM Studio** (for local AI inference)
-
-#### 1️⃣ Start with Docker (Recommended)
 ```bash
-# Start DB + Dashboard in one command
-docker-compose up -d --build
+docker compose up -d --build
+```
 
-# Start AI Service (must run on host machine, not in Docker)
+Panel: [http://localhost:15000](http://localhost:15000)
+
+Prometheus ve Grafana'yı da başlatmak için:
+
+```bash
+docker compose --profile monitoring up -d --build
+```
+
+Grafana: [http://localhost:3000](http://localhost:3000) · Prometheus: [http://localhost:9090](http://localhost:9090)
+
+İzleme profili ve Windows ajanı kurulumu için [`docs/monitoring.md`](docs/monitoring.md) sayfasına bakın. Yerel geliştirme, Python AI servisi ve MCP sunucusu yönergeleri: [`ai-service/README.md`](ai-service/README.md), [`mcp/README.md`](mcp/README.md), [`frontend/README.md`](frontend/README.md).
+
+### Yapay Zekâ Ayarları
+
+Panel ayarlarından sağlayıcıyı seçin:
+
+| Sağlayıcı | Kullanım |
+|---|---|
+| `LOCAL` | OpenAI uyumlu yerel model endpoint'i (ör. LM Studio veya Ollama) |
+| `CLOUD` | Yapılandırılmış bulut sağlayıcısı; API anahtarı gerekebilir |
+| `CREW_AI` | Python AI servisi üzerinden sorgu karmaşıklığına göre tek veya çok ajanlı analiz |
+
+CrewAI servisini ayrı çalıştırmak için:
+
+```bash
 cd ai-service
-python3 -m venv venv
-source venv/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-python3 app.py
+python app.py
 ```
-Open: `http://localhost:15000`
 
-#### 2️⃣ Start Manually (Development)
+Model endpoint'i ve kimlik bilgilerini ortam değişkenleriyle yapılandırın; gerçek anahtarları depoya eklemeyin. Yerel model kullanımı veriyi yapılandırdığınız yerel endpoint'e gönderir, ancak tüm uygulama akışının otomatik olarak yerel kaldığı anlamına gelmez.
+
+### Prometheus Metrikleri
+
+Dashboard metrik endpoint'i: `http://localhost:15000/actuator/prometheus`. Prometheus ve Grafana aynı Compose ağına bağlı olarak `monitoring` profiliyle çalıştırılabilir; Grafana dashboard'u otomatik provision edilir. Örnek PromQL:
+
+```promql
+devops_server_cpu_usage
+devops_server_ram_usage
+devops_server_disk_usage
+devops_server_container_count
+devops_server_pod_count
+devops_server_status
+devops_dashboard_online_count
+```
+
+### Güvenlik Notu
+
+Bu proje için üretim dağıtımı öncesinde Compose içindeki veritabanı parolasını değiştirin, servisleri güvenilir ağ/ters proxy arkasında sınırlandırın, TLS ve kimlik doğrulamayı ayrıca yapılandırın. Varsayılan yapılandırma internete açık, üretime hazır bir güvenlik profili değildir. Uzak ajan kurulum betiğini çalıştırmadan önce içeriğini inceleyin; Docker socket erişimi yüksek yetki verir.
+
+## English
+
+DevOps Dashboard is a self-hosted application for viewing local or remote servers, agent-reported telemetry, Docker containers, and Kubernetes pods in one place. Its optional AI chat can analyze a selected server on request. Simple queries use one agent; more involved diagnostics can use a CrewAI team of two or three agents.
+
+### Features
+
+- Server inventory, online/offline/unknown status, CPU/RAM/disk metrics, and history
+- Docker telemetry for Linux hosts and Kubernetes pod views
+- Windows PowerShell telemetry script with SSH reachability as a secondary status signal
+- User-initiated AI chat with selected-server context and local, cloud, or CrewAI providers
+- CrewAI/LangGraph routing from one agent for simple questions to multi-agent analysis when useful
+- Prometheus metrics endpoint and optional Grafana/Prometheus Compose profile
+- Server details, live telemetry, task queue, and configurable Telegram notifications
+- Turkish by default, English option, and light/dark themes
+- MCP server exposing dashboard tools to compatible clients
+
+> Server status uses telemetry freshness and selected checks; it is not simply a ping/HTTP check. An open SSH port on Windows does not by itself provide telemetry. Remote hosts are not discovered automatically: register a host and configure its agent.
+
+### Quick Start
+
+Requirements: Docker and Docker Compose. Start the dashboard and PostgreSQL:
+
 ```bash
-# 1. Start DB
-docker-compose up -d postgres
-
-# 2. Start AI Service
-cd ai-service && python3 app.py &
-
-# 3. Start Backend
-./mvnw spring-boot:run
+docker compose up -d --build
 ```
 
-#### 3️⃣ Build Frontend (After Code Changes)
+Open [http://localhost:15000](http://localhost:15000).
+
+To include Prometheus and Grafana:
+
 ```bash
-cd frontend
-npm run build:deploy   # Builds Angular AND copies to Spring static resources
-cd ..
-./mvnw clean package -DskipTests
-docker-compose up -d --build
+docker compose --profile monitoring up -d --build
 ```
 
-#### 4️⃣ Install Remote Agent on Target Servers
-To monitor remote Linux/Docker servers (e.g. CasaOS, AWS EC2, Raspberry Pi):
+Grafana: [http://localhost:3000](http://localhost:3000) · Prometheus: [http://localhost:9090](http://localhost:9090)
+
+See [`docs/monitoring.md`](docs/monitoring.md) for monitoring and Windows agent setup. Development, the Python AI service, and MCP instructions are in [`ai-service/README.md`](ai-service/README.md), [`mcp/README.md`](mcp/README.md), and [`frontend/README.md`](frontend/README.md).
+
+The screenshots above show the current dashboard, AI panel, settings with blank credentials, and a Prometheus target reporting `UP`. A Grafana dashboard screenshot is not included because the local Grafana instance requires an account login.
+
+### AI Providers
+
+Choose a provider in dashboard settings: `LOCAL` for an OpenAI-compatible local model endpoint such as LM Studio or Ollama; `CLOUD` for the configured cloud provider, which may require an API key; or `CREW_AI` for complexity-routed analysis through the Python AI service. Configure model endpoints and credentials through environment variables or the UI as appropriate. Never commit real API keys. Using a local model endpoint does not guarantee every application request stays local.
+
+Run the CrewAI service separately:
+
 ```bash
-curl -s http://<DASHBOARD_IP>:15000/api/v1/agent/script | sudo bash
-```
-> ⚠️ **Note**: Make sure to pipe to `sudo bash` so the agent script has permission to inspect Docker containers via `/var/run/docker.sock`.
-
----
-
-### 🤖 AI Engine Configuration (Settings Panel)
-
-Open the **AI Assistant** button → click the ⚙️ icon to configure:
-
-| Setting | Description |
-|---|---|
-| **LOCAL** | Direct LM Studio / Ollama endpoint |
-| **CREW_AI** | Python AI Service with LangGraph routing |
-| **CLOUD** | OpenAI / Claude (API key required) |
-
-#### 🔌 Endpoint URL Format (LOCAL mode)
-You can enter the LM Studio address in **any** of these formats — the system normalizes automatically:
-
-| You enter | System uses |
-|---|---|
-| `100.95.111.63` | `http://100.95.111.63:1234/v1/chat/completions` |
-| `100.95.111.63:1234` | `http://100.95.111.63:1234/v1/chat/completions` |
-| `http://100.95.111.63:1234` | `http://100.95.111.63:1234/v1/chat/completions` |
-| `http://100.95.111.63:1234/v1` | `http://100.95.111.63:1234/v1/chat/completions` |
-
----
-
-### 📈 Prometheus & Grafana Monitoring Integration
-
-This application exports live Micrometer Prometheus metrics for all registered servers, CPU/RAM/Disk telemetry, Docker containers, and Kubernetes pods.
-
-#### 1️⃣ Metrics Endpoint
-Access raw Prometheus metrics at:
-`http://<DASHBOARD_IP>:15000/actuator/prometheus`
-
-#### 2️⃣ Prometheus Scrape Configuration (`prometheus.yml`)
-Add the dashboard target to your Prometheus configuration file:
-```yaml
-scrape_configs:
-  - job_name: 'devops-dashboard'
-    metrics_path: '/actuator/prometheus'
-    scrape_interval: 5s
-    static_configs:
-      - targets: ['host.docker.internal:15000'] # Or your server IP: 192.168.1.X:15000
-```
-
-#### 3️⃣ Available PromQL Metrics for Grafana
-| Metric Name | Description | Example PromQL Query |
-|---|---|---|
-| `devops_server_cpu_usage` | CPU usage percentage per server | `devops_server_cpu_usage{ip="192.168.1.19"}` |
-| `devops_server_ram_usage` | RAM usage percentage per server | `devops_server_ram_usage{name="casaos"}` |
-| `devops_server_disk_usage` | Disk usage percentage per server | `devops_server_disk_usage` |
-| `devops_server_container_count` | Total active Docker containers per server | `devops_server_container_count` |
-| `devops_server_pod_count` | Total Kubernetes pods per server | `devops_server_pod_count` |
-| `devops_server_status` | Server online status (1 = ONLINE, 0 = OFFLINE) | `devops_server_status` |
-| `devops_dashboard_online_count` | Total online servers count | `devops_dashboard_online_count` |
-
----
-
-### 🔐 mTLS Security (CRITICAL)
-
-This application uses **Mutual TLS (mTLS)** for enterprise-grade security.
-
-**A. Establish Server Trust (Root CA):**
-*   Locate `certs/rootCA.crt` in the project root.
-*   **Mac**: Double-click → Keychain Access → Find "AI-Ops-Root-CA" → Get Info → Trust → **"Always Trust"**.
-*   **Windows**: Install Certificate → Local Machine → **"Trusted Root Certification Authorities"**.
-
-**B. Install Your Identity (Client Certificate):**
-*   Locate `certs/client.p12`.
-*   Double-click to install. **Password**: `ai-ops-password`.
-
-**C. Accessing the Dashboard:**
-*   URL: `https://localhost:15000`
-*   **Browser Prompt**: Select the `ai-ops-agent` certificate.
-
-**Login credentials:**
-*   **Username**: `admin`
-*   **Password**: `admin`
-
----
-
-### 🔐 Security Features
-*   **mTLS Authentication**: X.509 Mutual TLS prevents unauthorized scanners from hitting endpoints.
-*   **RSA Command Signing**: Every task is cryptographically signed. The agent verifies before execution.
-*   **Audit Trail**: All remote commands logged in `audit_logs` with digital signatures.
-
----
-
-<a name="türkçe"></a>
-## 🇹🇷 Türkçe
-
-### 🎯 Nedir?
-**"AI-Ops Dashboard"**, yüksek performanslı bir altyapı izleme ve teşhis ekosistemidir. Temel amacı, sunucu yönetimindeki "bağlam boşluğunu" çözmektir. Geleneksel araçlar sadece bir servisin kapalı olduğunu bildirirken, bu platform yapay zekayı kullanarak bunun **neden** olduğunu açıklar.
-
-### 👤 Kimin İçin?
-*   **DevOps Mühendisleri & SRE'ler**: Hızlı Kök Neden Analizi (RCA) ve uzak komut çalıştırma ihtiyacı olanlar.
-*   **Home-lab Meraklıları**: Yerel clusterlarını (Docker/K8s) akıllı bildirim katmanıyla yönetmek isteyenler.
-*   **Sistem Yöneticileri**: Yüksek riskli portları açmadan kısıtlı güvenlik duvarları arkasındaki sunucuları izlemek isteyenler.
-
-### ✨ Özellikler
-*   **CrewAI Yönlendirmesi**: Sorgu karmaşıklığına göre bir, iki veya üç ajan çalıştırır.
-*   **Akıllı Endpoint Çözümleyici**: LM Studio IP'sini yazmanız yeterli — sistem portu ve yolu otomatik tamamlar.
-*   **Terminal Tasarımlı Chatbot**: Boşlukları koruyan akış (streaming) yanıtları, markdown desteği.
-*   **Kök Neden Analizi (RCA)**: Sunucu metrikleri otomatik paketlenerek YZ'ye sorulur.
-*   **RSA Komut İmzalama**: Ajan, dijital imzayı doğrulamadan hiçbir betiği çalıştırmaz.
-*   **Canlı Log Akışı**: Uzak Docker konteyner loglarını WebSocket üzerinden RAM-to-RAM canlı izleme.
-*   **mTLS Güvenliği**: Yalnızca geçerli X.509 dijital sertifikasına sahip istemciler bağlanabilir.
-*   **Telegram & Discord Bildirimleri**: Kritik durumlar için çift bildirim kanalı.
-
----
-
-### 🧠 Yapay Zeka Motoru (Detaylı Bakış)
-
-| Sorgu Tipi | Rota | Motor |
-|---|---|---|
-| Selamlama, genel bilgi | SIMPLE | DevOps Mühendisi |
-| Hata analizi, teşhis | DIAGNOSTIC | Telemetri Analisti + DevOps Mühendisi |
-| Kritik kesinti, birden fazla sistemi etkileyen olay | INCIDENT | Telemetri Analisti + Olay İnceleme Uzmanı + DevOps Mühendisi |
-
-*   **LangGraph Orkestratörü**: Basit selamlamaları doğrudan yönlendirir. Diğer sorguları modelle sınıflandırır ve sınıflandırma başarısız olursa anahtar kelimeleri kullanır.
-*   **Yerel Çıkarım**: **LM Studio** üzerinden **Mistral NeMo 12B** veya **Llama-3.1-8B** ile %100 veri gizliliği.
-
----
-
-### 🏗️ Kurulum ve Hızlı Başlangıç
-
-#### 📋 Gereksinimler
-*   Java 17 veya üzeri
-*   Docker & Docker Compose
-*   Python 3.11+ (AI Servisi için)
-*   Node.js 20+ (Frontend build için)
-*   **LM Studio** (Yerel YZ için)
-
-#### 1️⃣ Docker ile Başlatın (Önerilen)
-```bash
-# Veritabanı + Dashboard tek komutla
-docker-compose up -d --build
-
-# AI Servisi (Host makinede çalışmalı, Docker içinde değil)
 cd ai-service
-python3 -m venv venv
-source venv/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-python3 app.py
-```
-Tarayıcıdan: `http://localhost:15000`
-
-#### 2️⃣ Manuel Başlatma (Geliştirme)
-```bash
-docker-compose up -d postgres
-cd ai-service && python3 app.py &
-./mvnw spring-boot:run
+python app.py
 ```
 
-#### 3️⃣ Frontend Derlemesi (Kod Değişikliğinden Sonra)
-```bash
-cd frontend
-npm run build:deploy   # Angular'ı derler VE Spring static klasörüne kopyalar
-cd ..
-./mvnw clean package -DskipTests
-docker-compose up -d --build
-```
+### Prometheus Metrics
 
-#### 4️⃣ Uzak Sunuculara Ajan Kurulumu
-Uzak Linux/Docker sunucularını (CasaOS, AWS EC2, Raspberry Pi vb.) izlemek için hedef sunucu terminalinde:
-```bash
-curl -s http://<DASHBOARD_IP>:15000/api/v1/agent/script | sudo bash
-```
-> ⚠️ **Not**: Komutun sonundaki `sudo bash` kullanımı önemlidir; böylece ajan `/var/run/docker.sock` üzerindeki tüm Docker konteynerlerini (OpenWebUI vb.) okuma yetkisine sahip olur.
+The dashboard exposes metrics at `http://localhost:15000/actuator/prometheus`. The optional Compose monitoring profile provisions Prometheus and a Grafana dashboard. Example metrics include `devops_server_cpu_usage`, `devops_server_ram_usage`, `devops_server_disk_usage`, `devops_server_container_count`, `devops_server_pod_count`, `devops_server_status`, and `devops_dashboard_online_count`.
 
----
+### Security
 
-### 🤖 YZ Motor Yapılandırması (Ayarlar Paneli)
+Before production use, replace the Compose database password, restrict service exposure to trusted networks or a reverse proxy, and configure TLS and authentication. The default configuration is not a production-ready internet-facing security profile. Review remote agent scripts before running them; Docker socket access grants substantial privileges.
 
-**AI Assistant** butonuna tıklayın → ⚙️ simgesine tıklayın:
+## Tech Stack
 
-| Ayar | Açıklama |
+| Component | Technology |
 |---|---|
-| **LOCAL** | Doğrudan LM Studio / Ollama endpoint |
-| **CREW_AI** | LangGraph yönlendirmeli Python AI Servisi |
-| **CLOUD** | OpenAI / Claude (API anahtarı gerekli) |
-
-#### 🔌 Endpoint URL Formatları (LOCAL modu)
-LM Studio adresini **istediğiniz formatta** girebilirsiniz — sistem otomatik düzenler:
-
-| Girilen | Sistem Kullanır |
-|---|---|
-| `100.95.111.63` | `http://100.95.111.63:1234/v1/chat/completions` |
-| `100.95.111.63:1234` | `http://100.95.111.63:1234/v1/chat/completions` |
-| `http://100.95.111.63:1234` | `http://100.95.111.63:1234/v1/chat/completions` |
-| `http://100.95.111.63:1234/v1` | `http://100.95.111.63:1234/v1/chat/completions` |
-
-#### 🤖 Endpoint URL Formatları (CREW_AI modu)
-CREW_AI modunda Ayarlar'daki endpoint Python AI servisinin adresidir. Boş bırakıldığında Spring Boot yerelde `http://localhost:8000`, Docker imajında `http://host.docker.internal:8000` adresini kullanır. Bu varsayılan adresi `CREW_AI_ENDPOINT` ile, model adresi ve anahtarını ise Python servisinin `OPENAI_API_BASE` ve `OPENAI_API_KEY` ayarlarıyla değiştirebilirsiniz.
-
----
-
-### 📈 Prometheus & Grafana İzleme Entegrasyonu
-
-Uygulama, kayıtlı tüm sunucuların CPU, RAM, Disk kullanım verilerini, aktif Docker container ve Kubernetes pod sayılarını **Prometheus formatında** canlı olarak dışa aktarır (Export).
-
-#### 1️⃣ Metrik Endpoint Adresi
-Canlı Prometheus metriklerine şu adresten erişilebilir:
-`http://<DASHBOARD_IP>:15000/actuator/prometheus`
-
-#### 2️⃣ Prometheus Hedef Yapılandırması (`prometheus.yml`)
-Prometheus konfigürasyon dosyanıza (`prometheus.yml`) aşağıdaki hedefi ekleyin:
-```yaml
-scrape_configs:
-  - job_name: 'devops-dashboard'
-    metrics_path: '/actuator/prometheus'
-    scrape_interval: 5s
-    static_configs:
-      - targets: ['host.docker.internal:15000'] # Veya sunucu IP'niz: 192.168.1.X:15000
-```
-
-#### 3️⃣ Grafana PromQL Metrikleri & Panelleri
-| Metrik İsmi | Açıklama | Örnek PromQL Sorgusu |
-|---|---|---|
-| `devops_server_cpu_usage` | Sunucu CPU Kullanımı (%) | `devops_server_cpu_usage{ip="192.168.1.19"}` |
-| `devops_server_ram_usage` | Sunucu RAM Kullanımı (%) | `devops_server_ram_usage{name="casaos"}` |
-| `devops_server_disk_usage` | Sunucu Disk Kullanımı (%) | `devops_server_disk_usage` |
-| `devops_server_container_count` | Sunucudaki Aktif Docker Sayısı | `devops_server_container_count` |
-| `devops_server_pod_count` | Sunucudaki Kubernetes Pod Sayısı | `devops_server_pod_count` |
-| `devops_server_status` | Sunucu Çevrimiçi Durumu (1 = ONLINE, 0 = OFFLINE) | `devops_server_status` |
-| `devops_dashboard_online_count` | Toplam Çevrimiçi Sunucu Sayısı | `devops_dashboard_online_count` |
-
----
-
-### 🔐 mTLS Yapılandırması (KRİTİK)
-
-**A. Sunucu Güvenini Sağlayın (Root CA):**
-*   `certs/rootCA.crt` dosyasını çift tıklayın.
-*   **Mac**: Keychain Access → "AI-Ops-Root-CA" → Bilgi Ver → Güven → **"Her Zaman Güven"**.
-*   **Windows**: Sertifika Yükle → Yerel Makine → **"Güvenilen Kök Sertifika Yetkilileri"**.
-
-**B. İstemci Sertifikasını Yükleyin:**
-*   `certs/client.p12` dosyasını yükleyin. **Parola**: `ai-ops-password`.
-
-**C. Panele Giriş:**
-*   Adres: `https://localhost:15000`
-*   Tarayıcı sertifika sorduğunda `ai-ops-agent`'ı seçin.
-
-**Giriş bilgileri:**
-*   **Kullanıcı Adı**: `admin`
-*   **Şifre**: `admin`
-
----
-
-### 🔐 Güvenlik ve Denetim
-*   **Denetim İzi**: Tüm uzak terminal görevleri komut imzalarıyla PostgreSQL'de saklanır.
-*   **mTLS Zorunluluğu**: Geçerli sertifikası olmayan hiçbir dış bağlantı API uç noktalarına ulaşamaz.
-*   **RSA Komut İmzalama**: Ajan imzasız hiçbir komutu çalıştırmaz.
-
-🗺️ **Roadmap**: Grafana Exporter Desteği, Mobil Uyumlu UI, Kubernetes ResourceQuota Entegrasyonu.
-
----
+| Frontend | Angular, TypeScript |
+| Backend | Java 17+, Spring Boot |
+| Database | PostgreSQL |
+| AI service | Python, FastAPI, LangGraph, CrewAI |
+| Monitoring | Micrometer, Prometheus, Grafana |
+| Tool integration | Model Context Protocol (MCP) |
